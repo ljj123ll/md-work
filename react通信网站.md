@@ -162,16 +162,6 @@
 
 bash
 
-
-
-
-
-
-
-
-
-
-
 ```bash
 npm create vite@latest snappy-frontend -- --template react-ts
 cd snappy-frontend
@@ -182,19 +172,7 @@ npm install react-router-dom@6 zustand@4 react-query@5 socket.io-client@4.7 styl
 
 **核心配置文件**（`vite.config.ts`）：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { defineConfig } from 'vite'
@@ -215,16 +193,6 @@ export default defineConfig({
 
 bash
 
-
-
-
-
-
-
-
-
-
-
 ```bash
 mkdir snappy-backend && cd snappy-backend
 npm init -y
@@ -237,19 +205,7 @@ npx prisma init
 
 **Prisma 配置**（`prisma/schema.prisma`）：
 
-
-
 prisma
-
-
-
-
-
-
-
-
-
-
 
 ```prisma
 generator client {
@@ -287,19 +243,7 @@ model Message {
 
 执行数据库迁移：
 
-
-
 bash
-
-
-
-
-
-
-
-
-
-
 
 ```bash
 npx prisma migrate dev --name init
@@ -311,19 +255,7 @@ npx prisma migrate dev --name init
 
 **（1）类型定义（`src/types/index.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 export interface User {
@@ -348,19 +280,7 @@ export interface Message {
 
 **（2）状态管理（`src/store/authStore.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { create } from 'zustand';
@@ -389,19 +309,7 @@ export const useAuthStore = create<AuthState>()(
 
 **（3）API 请求（`src/api/chatApi.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -455,19 +363,7 @@ export const useSendMessage = () => {
 
 **（4）聊天页面组件（`src/pages/Chat.tsx`）**：
 
-
-
 tsx
-
-
-
-
-
-
-
-
-
-
 
 ```tsx
 import { useEffect, useRef } from 'react';
@@ -517,19 +413,7 @@ export default Chat;
 
 **（1）服务器入口（`src/index.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import fastify from 'fastify';
@@ -601,19 +485,7 @@ start();
 
 **（2）用户认证路由（`src/routes/auth.routes.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { FastifyInstance } from 'fastify';
@@ -632,19 +504,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 **（3）消息控制器（`src/controllers/message.controller.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { FastifyRequest, FastifyReply } from 'fastify';
@@ -691,19 +551,7 @@ export const addMessage = async (req: FastifyRequest<{
 
 **`docker-compose.yml`**：
 
-
-
 yaml
-
-
-
-
-
-
-
-
-
-
 
 ```yaml
 version: '3.8'
@@ -774,16 +622,6 @@ volumes:
 
 bash
 
-
-
-
-
-
-
-
-
-
-
 ```bash
 npm create vite@latest snappy-frontend -- --template react-ts
 cd snappy-frontend
@@ -794,19 +632,7 @@ npm install react-router-dom@6 zustand@4 react-query@5 socket.io-client@4.7 styl
 
 **核心配置文件**（`vite.config.ts`）：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { defineConfig } from 'vite'
@@ -827,16 +653,6 @@ export default defineConfig({
 
 bash
 
-
-
-
-
-
-
-
-
-
-
 ```bash
 mkdir snappy-backend && cd snappy-backend
 npm init -y
@@ -849,19 +665,7 @@ npx prisma init
 
 **Prisma 配置**（`prisma/schema.prisma`）：
 
-
-
 prisma
-
-
-
-
-
-
-
-
-
-
 
 ```prisma
 generator client {
@@ -899,19 +703,7 @@ model Message {
 
 执行数据库迁移：
 
-
-
 bash
-
-
-
-
-
-
-
-
-
-
 
 ```bash
 npx prisma migrate dev --name init
@@ -923,19 +715,7 @@ npx prisma migrate dev --name init
 
 **（1）类型定义（`src/types/index.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 export interface User {
@@ -960,19 +740,7 @@ export interface Message {
 
 **（2）状态管理（`src/store/authStore.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { create } from 'zustand';
@@ -1001,19 +769,7 @@ export const useAuthStore = create<AuthState>()(
 
 **（3）API 请求（`src/api/chatApi.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -1067,19 +823,7 @@ export const useSendMessage = () => {
 
 **（4）聊天页面组件（`src/pages/Chat.tsx`）**：
 
-
-
 tsx
-
-
-
-
-
-
-
-
-
-
 
 ```tsx
 import { useEffect, useRef } from 'react';
@@ -1132,16 +876,6 @@ export default Chat;
 
 
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import fastify from 'fastify';
@@ -1213,19 +947,7 @@ start();
 
 **（2）用户认证路由（`src/routes/auth.routes.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { FastifyInstance } from 'fastify';
@@ -1244,19 +966,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 **（3）消息控制器（`src/controllers/message.controller.ts`）**：
 
-
-
 typescript
-
-
-
-
-
-
-
-
-
-
 
 ```typescript
 import { FastifyRequest, FastifyReply } from 'fastify';
@@ -1303,19 +1013,7 @@ export const addMessage = async (req: FastifyRequest<{
 
 **`docker-compose.yml`**：
 
-
-
 yaml
-
-
-
-
-
-
-
-
-
-
 
 ```yaml
 version: '3.8'
