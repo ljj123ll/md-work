@@ -6631,11 +6631,11 @@ console.log("10: 最后同步代码");
 
 DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所有对页面结构、内容、样式的动态修改都依赖 DOM 操作。常见的 DOM 操作可按**核心功能维度**分类，每个类别下不仅有基础方法，还需理解其差异、兼容性及性能考量，以下是详细梳理：
 
-### 一、DOM 元素查找（选择器操作）
+## DOM 元素查找（选择器操作）
 
 核心目标是从文档中定位到需要操作的元素，是所有 DOM 操作的 “前置步骤”。根据查找范围和精度，分为**直接查找**和**关系查找**两类：
 
-#### 1. 直接查找（按选择器 / 标识定位）
+### 直接查找（按选择器 / 标识定位）
 
 直接通过元素的 ID、标签名、类名或 CSS 选择器匹配，返回单个或多个元素。
 
@@ -6653,13 +6653,13 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
 
 **拓展知识**：
 
-
-
 - 动态集合（HTMLCollection）vs 静态集合（NodeList）：
   动态集合（如`getElementsByXXX`）会 “实时同步” 文档变化，比如用`let divs = document.getElementsByTagName('div')`后，新增一个`div`，`divs.length`会自动 + 1；而静态集合（`querySelectorAll`）是 “快照”，新增元素不会影响已有结果。
   实际开发中，若需频繁操作集合，静态集合更安全（避免遍历中集合长度变化导致 bug），动态集合则适合需实时跟踪元素的场景。
 
-#### 2. 关系查找（按元素间的层级关系定位）
+
+
+### 关系查找（按元素间的层级关系定位）
 
 基于已找到的元素，通过父子、兄弟关系查找关联元素，适合 “已知一个元素，找它附近的元素” 场景：
 
@@ -6676,17 +6676,17 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
   - 后一个兄弟：`element.nextElementSibling` vs `element.nextSibling`；
   - 所有兄弟：需通过父级`children`遍历（如`[...element.parentElement.children].filter(sib => sib !== element)`）。
 
-### 二、DOM 元素创建与插入
+## DOM 元素创建与插入
 
 核心是 “生成新元素” 并 “插入到文档中”（仅插入后才会在页面显示），常见流程：创建元素 → 设置内容 / 属性 → 插入文档。
 
-#### 1. 元素创建
+### 元素创建
 
 - `document.createElement(tagName)`：创建指定标签的元素（如`document.createElement('div')`），返回 Element 节点（初始为 “游离状态”，未挂载到文档）。
 - `document.createTextNode(text)`：创建文本节点（如`document.createTextNode('Hello')`），用于精准控制文本（避免`innerHTML`的 XSS 风险）。
 - `element.cloneNode(deep)`：克隆已有元素，`deep=true`时深度克隆（复制子节点），`deep=false`时仅克隆当前元素（子节点不复制）。注意：克隆的元素不含事件绑定（除非是内联事件`onclick="xxx"`）。
 
-#### 2. 元素插入
+### 元素插入
 
 将创建 / 克隆的元素插入到文档的指定位置，常用方法：
 
@@ -6703,37 +6703,15 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
 
 **拓展知识**：
 
+- **插入已存在的元素：若插入的`child`已在文档中，会自动从原位置 “移动” 到新位置（而非复制），如需复制需先克隆。**
 
+- 批量插入优化：频繁调用**appendChild**会触发多次重排重绘（影响性能），建议用**DocumentFragment**
 
-- 插入已存在的元素：若插入的`child`已在文档中，会自动从原位置 “移动” 到新位置（而非复制），如需复制需先克隆。
-
-- 批量插入优化：频繁调用
-
-  ```
-  appendChild
-  ```
-
-  会触发多次重排重绘（影响性能），建议用
-
-  ```
-  DocumentFragment
-  ```
-
-  批量处理：
-
+  **批量处理**：
+  
   javascript
 
-  
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const fragment = document.createDocumentFragment(); // 虚拟容器，不触发重排
@@ -6745,15 +6723,15 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
   ul.appendChild(fragment); // 仅1次插入文档，触发1次重排
   ```
 
-### 三、DOM 元素修改（内容 / 属性 / 样式）
+
+
+## DOM 元素修改（内容 / 属性 / 样式）
 
 对已存在的元素进行 “内容更新”“属性修改” 或 “样式调整”，是实现页面动态交互的核心。
 
-#### 1. 内容修改
+### 内容修改
 
 控制元素的文本或 HTML 结构，需区分 “文本安全” 和 “HTML 解析” 场景：
-
-
 
 | 方法 / 属性           | 功能描述                                                     | 安全性 / 注意事项                                            |
 | --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -6761,53 +6739,19 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
 | `element.innerHTML`   | 设置 / 获取元素的**HTML 内容**（会解析 HTML 标签，生成 DOM 节点） | 有 XSS 风险（如用户输入`<script>alert(1)</script>`会执行），仅在信任内容时使用；且会覆盖原有子节点（包括事件绑定） |
 | `element.innerText`   | 类似`textContent`，但会忽略 “不可见文本”（如`display:none`的元素内容），且受 CSS 样式影响 | 兼容性差（IE 专属属性，Chrome/Firefox 虽支持但行为不一致），不推荐使用 |
 
-#### 2. 属性修改
+### 属性修改
 
 操作元素的 HTML 属性（如`id`、`class`、`src`、`data-*`），分为 “标准属性” 和 “自定义属性”：
 
 
 
-- 标准属性（元素自带属性，如
+- **标准属性**（元素自带属性，如**id、src**）：
 
-  ```
-  id
-  ```
-
-  、
-
-  ```
-  src
-  ```
-
-  ）：
-
-  可直接通过元素对象的属性赋值（更高效），或用
-
-  ```
-  setAttribute
-  ```
-
-  /
-
-  ```
-  getAttribute
-  ```
-
-  ：
-
+  可直接通过元素对象的属性赋值（更高效），或用**setAttribute/getAttribute**：
+  
   javascript
 
-  
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const img = document.querySelector('img');
@@ -6815,144 +6759,50 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
   img.setAttribute('alt', '新图片'); // 通用方法
   console.log(img.getAttribute('alt')); // 获取属性值
   ```
+  
+- **自定义属性**（如data-id、data-name）：
 
-- 自定义属性（如
-
-  ```
-  data-id
-  ```
-
-  、
-
-  ```
-  data-name
-  ```
-
-  ）：
-
-  推荐用
-
-  ```
-  dataset
-  ```
-
-   
-
-  API（更简洁），而非直接
-
-  ```
-  setAttribute
-  ```
-
-  ：
-
+  推荐用dataset  API（更简洁），而非直接setAttribute：
+  
   javascript
 
-  
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const btn = document.querySelector('btn');
   btn.dataset.id = '123'; // 等价于setAttribute('data-id', '123')
   btn.dataset.status = 'active'; // 等价于setAttribute('data-status', 'active')
   console.log(btn.dataset.id); // '123'（自动驼峰转连字符，如dataset.userId对应data-user-id）
-  ```
+```
 
-#### 3. 样式修改
+### 样式修改
 
 控制元素的 CSS 样式，分为 “内联样式” 和 “类名切换”（推荐后者，符合 “样式与逻辑分离”）：
 
 
 
-- 内联样式（
-
-  ```
-  style
-  ```
-
-  属性）：
-
-  操作
-
-  ```
-  element.style
-  ```
-
-  对象，属性名需用驼峰式（如
-
-  ```
-  backgroundColor
-  ```
-
-  而非
-
-  ```
-  background-color
-  ```
-
-  ）：
+- 内联样式（style属性）：操作**element.style**对象，属性名需用驼峰式（如**backgroundColor**而非**background-color**）：
 
   javascript
-
   
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const div = document.querySelector('div');
   div.style.width = '200px'; // 必须加单位（如px）
   div.style.backgroundColor = 'red';
   console.log(div.style.width); // '200px'（仅能获取内联样式，无法获取外部CSS样式）
-  ```
+```
 
-- 类名切换（
+- 类名切换（**classList  API**）：
 
-  ```
-  classList
-  ```
-
-   
-
-  API）：
-
-  通过添加 / 移除 CSS 类来控制样式，避免直接操作
-
-  ```
-  className
-  ```
-
+  通过添加 / 移除 CSS 类来控制样式，避免直接操作**className**
+  
   （会覆盖所有类名）：
 
   javascript
 
-  
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const btn = document.querySelector('btn');
@@ -6962,52 +6812,30 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
   btn.classList.contains('active'); // 判断是否包含类（返回boolean）
   ```
 
-  优势
-
-  ：1. 支持多类名操作；2. 不覆盖原有类名；3. 兼容性良好（IE10 + 支持，IE9 及以下需用
-
-  ```
-  className
-  ```
-
-  拼接）。
+  **优势：1. 支持多类名操作；2. 不覆盖原有类名；3. 兼容性良好（IE10 + 支持，IE9 及以下需用className拼接）。**
 
 
 
 **拓展知识**：获取计算样式（外部 CSS + 内联样式的最终样式）：
 用`window.getComputedStyle(element)`，返回包含所有计算后样式的对象，可获取元素的实际显示样式（如`getComputedStyle(div).width`），注意：返回值是只读的，不能修改。
 
-### 四、DOM 元素删除与替换
+## DOM 元素删除与替换
 
 移除不需要的元素或替换已有元素，避免无效 DOM 节点占用内存。
 
-#### 1. 元素删除
+### 元素删除
 
 - ```
   parent.removeChild(child)
   ```
 
-  ：通过父节点删除子节点，需先找到父节点（若子节点已被移除，调用会报错，需先判断
-
-  ```
-  child.parentNode
-  ```
+  ：通过父节点删除子节点，需先找到父节点（若子节点已被移除，调用会报错，需先判断**child.parentNode**
 
   是否存在）：
-
+  
   javascript
 
-  
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const li = document.querySelector('li');
@@ -7015,87 +6843,33 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
     li.parentNode.removeChild(li);
   }
   ```
-
-- ```
-  element.remove()
-  ```
-
-  ：直接删除元素（无需找父节点），更简洁，但
-
-  IE11 及以下不支持
-
-  ，兼容性场景需用
-
-  ```
-  removeChild
-  ```
-
-  ：
+  
+  
+  
+- **element.remove()**：直接删除元素（无需找父节点），更简洁，但IE11 及以下不支持，兼容性场景需用
+  
+  **removeChild**：
 
   javascript
 
-  
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const btn = document.querySelector('btn');
   btn.remove(); // 现代浏览器推荐
   ```
 
-#### 2. 元素替换
+### 元素替换
 
 - ```
   parent.replaceChild(newChild, oldChild)
   ```
 
-  ：用
-
-  ```
-  newChild
-  ```
-
-  替换
-
-  ```
-  parent
-  ```
-
-  中的
-
-  ```
-  oldChild
-  ```
-
-  ，替换后
-
-  ```
-  oldChild
-  ```
-
-  会从文档中移除：
+  ：用**newChild**替换**parent**中的**oldChild**，替换后**oldChild**会从文档中移除：
 
   javascript
-
   
-
   运行
-
-  
-
-  
-
-  
-
-  
 
   ```javascript
   const oldLi = document.querySelector('li');
@@ -7104,11 +6878,13 @@ DOM（文档对象模型）是前端操作 HTML/XML 文档的核心接口，所�
   oldLi.parentNode.replaceChild(newLi, oldLi);
   ```
 
-### 五、DOM 事件绑定（交互核心）
+
+
+## DOM 事件绑定（交互核心）
 
 DOM 操作的最终目的是实现 “用户交互”，需为元素绑定事件（如点击、输入、滚动），常见事件绑定方式：
 
-#### 1. 三种绑定方式对比
+### 三种绑定方式对比
 
 | 绑定方式                          | 实现方式                                            | 优势                                                         | 劣势                                                         |
 | --------------------------------- | --------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -7116,7 +6892,7 @@ DOM 操作的最终目的是实现 “用户交互”，需为元素绑定事件
 | DOM0 级事件（元素属性）           | `btn.onclick = handleClick`                         | 兼容性好（所有浏览器支持）；操作简单                         | 1. 无法绑定多个同类型事件；2. 解绑需赋值`null`（`btn.onclick = null`） |
 | DOM2 级事件（`addEventListener`） | `btn.addEventListener('click', handleClick, false)` | 1. 支持绑定多个同类型事件；2. 支持事件捕获 / 冒泡；3. 可解绑指定事件（`removeEventListener`） | IE8 及以下不支持（需用`attachEvent`/`detachEvent`，如`btn.attachEvent('onclick', handleClick)`） |
 
-#### 2. 关键概念：事件流与事件委托
+### 关键概念：事件流与事件委托
 
 - 事件流：事件触发后会经历 “捕获阶段（从 document 到目标元素）→ 目标阶段（目标元素本身）→ 冒泡阶段（从目标元素到 document）”，`addEventListener`的第三个参数`useCapture`控制是否在捕获阶段触发（`true`捕获，`false`冒泡，默认`false`）。
 - 事件委托（事件代理）：利用事件冒泡，将子元素的事件绑定到父元素上，实现 “批量子元素的事件监听”，优化性能（减少事件绑定数量）和动态元素适配（新增子元素无需重新绑定事件）。
@@ -7125,65 +6901,33 @@ DOM 操作的最终目的是实现 “用户交互”，需为元素绑定事件
 
 **STAR 法则案例：事件委托的实际应用**
 
-
-
 - **Situation（场景）**：项目中有一个商品列表（`ul#product-list`），列表项（`li`）有 100 个，需要实现 “点击每个 li 显示商品 ID” 的功能，且后续会通过接口动态加载更多 li。
 
 - **Task（任务）**：实现点击 li 显示 ID，要求性能优、支持动态元素，避免重复绑定事件。
 
-- Action（行动）
-
-  ：利用事件委托，将点击事件绑定到父元素
-
-  ```
-  ul
-  ```
-
-  上，通过
-
-  ```
-  event.target
-  ```
-
-  判断是否点击的是 li，再获取商品 ID（存在
-
-  ```
-  data-id
-  ```
-
-  属性中）：
+- **Action（行动）**：利用事件委托，将点击事件绑定到父元素ul上，通过event.target判断是否点击的是 li，再获取商品 ID（存在data-id属性中）：
 
   javascript
 
-  
-
   运行
-
   
-
-  
-
-  
-
-  
-
   ```javascript
-  const productList = document.getElementById('product-list');
+const productList = document.getElementById('product-list');
   // 绑定事件到父元素
-  productList.addEventListener('click', function(e) {
+productList.addEventListener('click', function(e) {
     // 兼容性处理：IE下用e.srcElement
     const target = e.target || e.srcElement;
     // 判断点击的是li元素（避免点击ul的空白区域触发）
-    if (target.tagName.toLowerCase() === 'li') {
+  if (target.tagName.toLowerCase() === 'li') {
       const productId = target.dataset.id;
-      alert(`商品ID：${productId}`);
+    alert(`商品ID：${productId}`);
     }
   });
   ```
 
 - **Result（结果）**：1. 仅绑定 1 个事件（而非 100 个），减少内存占用；2. 动态加载的 li 无需重新绑定事件，直接支持点击；3. 代码简洁，易维护，后续若需修改逻辑仅需改父元素的事件处理函数。
 
-### 六、DOM 操作的性能优化（进阶重点）
+## DOM 操作的性能优化（进阶重点）
 
 DOM 操作是 “昂贵” 的（会触发重排 Reflow 和重绘 Repaint），频繁操作会导致页面卡顿，需注意以下优化点：
 
@@ -7195,7 +6939,7 @@ DOM 操作是 “昂贵” 的（会触发重排 Reflow 和重绘 Repaint），�
 4. **使用`requestAnimationFrame`**：将 DOM 修改操作放入`requestAnimationFrame`回调中，确保在浏览器重绘前执行，避免掉帧；
 5. **虚拟 DOM（框架层面）**：现代框架（Vue/React）通过 “虚拟 DOM” 批量对比 DOM 差异，仅更新必要的节点，从框架层优化 DOM 操作性能（本质是对原生 DOM 操作的封装和批量处理）。
 
-### 总结
+## 总结
 
 DOM 操作是前端开发的基础，核心围绕 “查找→创建→修改→删除→交互” 展开。需不仅掌握基础方法，更要理解：
 
@@ -7206,4 +6950,360 @@ DOM 操作是前端开发的基础，核心围绕 “查找→创建→修改→
 - 事件委托的原理（优化性能和动态元素）；
 - 重排重绘的影响（性能优化关键）。
   这些知识点不仅是面试高频考点，更是实际开发中避免 bug、提升页面性能的核心能力。
+
+
+
+
+
+# 说说你对BOM的理解以及常见的BOM对象
+
+要理解 **BOM（Browser Object Model，浏览器对象模型）**，核心是抓住其 “**操作浏览器本身**” 的本质 —— 它与操作文档内容的 **DOM（文档对象模型）** 形成互补：DOM 负责 “页面内容”，BOM 负责 “浏览器环境”（如地址栏、历史记录、屏幕尺寸等）。
+
+## 对 BOM 的核心理解
+
+BOM 是浏览器提供的一套 **用于与浏览器交互的对象体系**，没有官方统一标准（早期由浏览器厂商各自实现，现在已形成 “事实标准”），其核心特点如下：
+
+1. **无官方标准，但有事实约定**：W3C 未定义 BOM 标准，但现代浏览器（Chrome、Firefox、Edge 等）对核心 BOM 对象的实现已高度一致。
+2. **以 `window` 为顶层对象**：所有 BOM 对象都是 `window` 的属性（如 `window.location`、`window.history`），`window` 也是全局对象（全局变量、函数默认挂载到 `window` 上）。
+3. **作用域是浏览器实例**：BOM 操作的是 “当前浏览器窗口 / 标签页” 的状态（如跳转页面、刷新、获取屏幕尺寸），而非页面中的具体内容。
+4. 与 DOM 的区别：
+   - **DOM**：操作 **HTML 文档结构**（如 `<div>`、`<p>` 等元素），核心对象是 `document`。
+   - **BOM**：操作 **浏览器环境**（如地址栏、历史记录、弹窗），核心对象是 `window`。
+
+## 常见的 BOM 对象及核心用法
+
+所有 BOM 对象都挂载在 `window` 上，以下是开发中最常用的 7 类 BOM 对象，包含 **核心作用、关键 API、代码示例**：
+
+### `window`：顶层全局对象
+
+`window` 是 BOM 的 “根对象”，既是浏览器窗口的抽象，也是 JavaScript 的全局对象。
+
+#### 核心作用：
+
+- 作为全局作用域（全局变量、函数默认挂载到 `window`）；
+- 控制浏览器窗口行为（如打开、关闭、调整大小）；
+- 提供弹窗方法（`alert`、`confirm`、`prompt`）。
+
+#### 关键 API 与示例：
+
+javascript
+
+运行
+
+```javascript
+// 1. 全局变量/函数默认挂载到 window
+const msg = "全局变量";
+console.log(window.msg); // "全局变量"（等价于直接写 msg）
+
+function sayHi() { console.log("Hi"); }
+window.sayHi(); // "Hi"（等价于直接写 sayHi()）
+
+// 2. 弹窗方法（常用交互）
+window.alert("提示信息"); // 警告弹窗（无返回值）
+
+const isConfirm = window.confirm("确定要删除吗？"); // 确认弹窗
+console.log(isConfirm); // 点击“确定”返回 true，“取消”返回 false
+
+const inputVal = window.prompt("请输入姓名：", "张三"); // 输入弹窗
+console.log(inputVal); // 输入内容（取消则返回 null）
+
+// 3. 窗口控制（部分方法受浏览器安全限制）
+window.open("https://example.com", "_blank"); // 打开新窗口（_blank 新标签页）
+window.close(); // 关闭当前窗口（仅对通过 window.open 打开的窗口生效）
+window.resizeTo(800, 600); // 调整窗口尺寸为 800x600
+```
+
+###  `location`：URL 信息与页面导航
+
+`location` 封装了当前页面的 **URL 信息**，并提供方法控制页面跳转、刷新等。
+
+#### 核心作用：
+
+- 获取 / 修改当前 URL 的各个部分（协议、域名、路径、参数）；
+- 实现页面跳转、刷新、替换历史记录。
+
+#### 关键 API 与示例：
+
+javascript
+
+运行
+
+```javascript
+// 1. 获取 URL 各部分信息（以 URL：https://example.com/path?name=张三#top 为例）
+console.log(location.protocol); // "https:"（协议）
+console.log(location.host); // "example.com"（域名+端口，无端口则省略）
+console.log(location.pathname); // "/path"（路径）
+console.log(location.search); // "?name=张三"（查询参数，?开头）
+console.log(location.hash); // "#top"（锚点，#开头）
+console.log(location.href); // 完整 URL："https://example.com/path?name=张三#top"
+
+// 2. 页面导航与刷新
+location.href = "https://new-example.com"; // 跳转到新 URL（会添加历史记录）
+location.assign("https://new-example.com"); // 等价于 href，跳转到新 URL
+location.replace("https://new-example.com"); // 跳转但不添加历史记录（无法后退到当前页）
+location.reload(); // 刷新当前页（相当于 F5）
+location.reload(true); // 强制刷新（跳过缓存，相当于 Ctrl+F5）
+
+// 3. 解析查询参数（示例：从 search 中提取 name）
+function getQueryParam(key) {
+  const search = location.search.slice(1); // 去掉 ?，得到 "name=张三"
+  const params = new URLSearchParams(search);
+  return params.get(key);
+}
+console.log(getQueryParam("name")); // "张三"
+```
+
+### `history`：浏览器历史记录
+
+`history` 管理当前窗口的 **浏览历史栈**（用户访问过的页面记录），可实现前进、后退等操作。
+
+#### 核心作用：
+
+- 前进 / 后退到历史页面；
+- 无刷新修改 URL（HTML5 新增 `pushState`/`replaceState`，单页应用核心）。
+
+#### 关键 API 与示例：
+
+javascript
+
+
+
+运行
+
+
+
+
+
+
+
+
+
+```javascript
+// 1. 前进/后退
+history.back(); // 后退到上一页（相当于浏览器“后退”按钮）
+history.forward(); // 前进到下一页（相当于“前进”按钮）
+history.go(-2); // 后退 2 页（正数前进，负数后退）
+history.go(1); // 前进 1 页（等价于 forward()）
+
+// 2. HTML5 新增：无刷新修改 URL（单页应用 SPA 核心）
+// pushState(state, title, url)：添加新历史记录，不刷新页面
+history.pushState(
+  { id: 1, name: "首页" }, // 状态对象（可通过 history.state 获取）
+  "首页", // 页面标题（多数浏览器忽略）
+  "/home" // 新 URL（必须与当前域名同源，否则报错）
+);
+
+// replaceState(state, title, url)：替换当前历史记录，不刷新页面
+history.replaceState(
+  { id: 2, name: "详情页" },
+  "详情页",
+  "/detail?id=123"
+);
+
+// 监听 URL 变化（配合 pushState 使用，单页应用路由核心）
+window.addEventListener("popstate", (e) => {
+  console.log("URL 变化了", location.href);
+  console.log("历史状态", e.state); // 获取 pushState 存储的 state 对象
+});
+```
+
+### 4. `navigator`：浏览器环境信息
+
+`navigator` 提供当前浏览器的 **环境信息**（如浏览器类型、版本、操作系统、设备类型），常用于 “浏览器 / 设备判断”。
+
+#### 核心作用：
+
+- 判断浏览器类型（Chrome/Firefox/Edge）；
+- 判断设备类型（PC / 移动端）；
+- 获取地理位置（HTML5 新增 `geolocation`）。
+
+#### 关键 API 与示例：
+
+javascript
+
+
+
+运行
+
+
+
+
+
+
+
+
+
+```javascript
+// 1. 浏览器信息
+console.log(navigator.userAgent); // 用户代理字符串（关键：判断浏览器/设备）
+// 示例 userAgent："Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+console.log(navigator.appName); // 浏览器名称（多数返回 "Netscape"，意义不大）
+console.log(navigator.platform); // 操作系统平台（如 "Win32"、"MacIntel"、"Linux armv8l"）
+
+// 2. 判断是否为移动端（通过 userAgent 匹配）
+function isMobile() {
+  const ua = navigator.userAgent;
+  return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(ua);
+}
+console.log(isMobile()); // true（移动端）/ false（PC端）
+
+// 3. 获取地理位置（需用户授权）
+navigator.geolocation.getCurrentPosition(
+  (position) => {
+    // 成功获取位置
+    console.log("纬度：", position.coords.latitude);
+    console.log("经度：", position.coords.longitude);
+  },
+  (error) => {
+    // 获取失败（如用户拒绝授权）
+    console.error("获取位置失败：", error.message);
+  }
+);
+```
+
+### 5. `screen`：屏幕信息
+
+`screen` 提供当前设备的 **屏幕硬件信息**（如分辨率、可用尺寸），常用于 “响应式适配” 或 “判断屏幕大小”。
+
+#### 核心作用：
+
+- 获取屏幕分辨率（总尺寸）；
+- 获取可用屏幕尺寸（排除任务栏 / 状态栏）。
+
+#### 关键 API 与示例：
+
+javascript
+
+
+
+运行
+
+
+
+
+
+
+
+
+
+```javascript
+// 1. 屏幕总分辨率（屏幕物理尺寸）
+console.log(screen.width); // 屏幕宽度（如 1920）
+console.log(screen.height); // 屏幕高度（如 1080）
+
+// 2. 可用屏幕尺寸（排除任务栏/状态栏，实际可显示内容的尺寸）
+console.log(screen.availWidth); // 可用宽度（如 1920）
+console.log(screen.availHeight); // 可用高度（如 1040，排除 Windows 任务栏 40px）
+
+// 3. 示例：判断是否为大屏设备
+function isLargeScreen() {
+  return screen.availWidth >= 1200;
+}
+console.log(isLargeScreen()); // true（大屏）/ false（小屏）
+```
+
+### 6. `localStorage` / `sessionStorage`：本地存储
+
+`localStorage` 和 `sessionStorage` 是 HTML5 新增的 **客户端本地存储对象**（属于 BOM 范畴），用于在浏览器中存储键值对数据，无需与服务器交互。
+
+#### 核心区别：
+
+| 特性     | `localStorage`           | `sessionStorage`               |
+| -------- | ------------------------ | ------------------------------ |
+| 存储时长 | 永久存储（除非手动删除） | 会话级存储（关闭标签页后删除） |
+| 作用域   | 同域名下所有标签页共享   | 仅当前标签页可用               |
+| 存储大小 | 约 5MB                   | 约 5MB                         |
+
+#### 关键 API 与示例：
+
+javascript
+
+
+
+运行
+
+
+
+
+
+
+
+
+
+```javascript
+// 1. localStorage 使用
+localStorage.setItem("username", "张三"); // 存储数据（键值对，值需为字符串）
+console.log(localStorage.getItem("username")); // "张三"（获取数据）
+localStorage.removeItem("username"); // 删除指定键
+// localStorage.clear(); // 清空所有数据
+
+// 2. sessionStorage 使用（API 与 localStorage 完全一致）
+sessionStorage.setItem("token", "abc123");
+console.log(sessionStorage.getItem("token")); // "abc123"
+// 关闭标签页后，sessionStorage 数据自动删除
+
+// 3. 存储非字符串数据（需先转为 JSON）
+const user = { name: "李四", age: 25 };
+localStorage.setItem("user", JSON.stringify(user)); // 转为 JSON 字符串存储
+const savedUser = JSON.parse(localStorage.getItem("user")); // 解析为对象
+console.log(savedUser.name); // "李四"
+```
+
+### 7. `timer` 相关：定时器
+
+`setTimeout`、`setInterval`、`clearTimeout`、`clearInterval` 是 BOM 提供的 **定时器方法**（挂载在 `window` 上），用于延迟执行或周期性执行代码。
+
+#### 核心作用：
+
+- 延迟执行代码（`setTimeout`）；
+- 周期性执行代码（`setInterval`）；
+- 取消定时器（`clearTimeout`/`clearInterval`）。
+
+#### 关键 API 与示例：
+
+javascript
+
+
+
+运行
+
+
+
+
+
+
+
+
+
+```javascript
+// 1. setTimeout：延迟 1000ms 执行一次
+const timer1 = setTimeout(() => {
+  console.log("1秒后执行");
+}, 1000);
+// 取消定时器（若在 1 秒内执行）
+// clearTimeout(timer1);
+
+// 2. setInterval：每隔 1000ms 执行一次（周期性）
+const timer2 = setInterval(() => {
+  console.log("每1秒执行一次");
+}, 1000);
+// 5 秒后取消周期性执行
+setTimeout(() => {
+  clearInterval(timer2);
+  console.log("停止周期性执行");
+}, 5000);
+```
+
+## 三、BOM 的核心应用场景
+
+1. **页面导航与历史管理**：如单页应用（SPA）用 `history.pushState` 实现无刷新路由；
+2. **浏览器 / 设备适配**：用 `navigator.userAgent` 判断移动端 / PC 端，加载不同样式；
+3. **本地数据存储**：用 `localStorage` 存储用户偏好设置（如主题、记住密码）；
+4. **交互反馈**：用 `alert`/`confirm` 实现简单弹窗，用 `setTimeout` 实现延迟提示；
+5. **屏幕适配**：用 `screen` 信息判断屏幕尺寸，动态调整页面布局。
+
+## 总结
+
+BOM 是前端与浏览器交互的 “桥梁”，核心是 `window` 顶层对象，包含 `location`（URL）、`history`（历史）、`navigator`（环境）、`screen`（屏幕）等关键对象。它虽无官方标准，但现代浏览器实现已高度统一，是实现 “浏览器级交互”（如跳转、存储、适配）的核心工具，与操作 “页面内容” 的 DOM 共同构成前端开发的基础能力。
 
