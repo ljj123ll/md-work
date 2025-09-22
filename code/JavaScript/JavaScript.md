@@ -7066,17 +7066,7 @@ console.log(getQueryParam("name")); // "张三"
 
 javascript
 
-
-
 运行
-
-
-
-
-
-
-
-
 
 ```javascript
 // 1. 前进/后退
@@ -7107,7 +7097,7 @@ window.addEventListener("popstate", (e) => {
 });
 ```
 
-### 4. `navigator`：浏览器环境信息
+### `navigator`：浏览器环境信息
 
 `navigator` 提供当前浏览器的 **环境信息**（如浏览器类型、版本、操作系统、设备类型），常用于 “浏览器 / 设备判断”。
 
@@ -7121,17 +7111,7 @@ window.addEventListener("popstate", (e) => {
 
 javascript
 
-
-
 运行
-
-
-
-
-
-
-
-
 
 ```javascript
 // 1. 浏览器信息
@@ -7162,7 +7142,7 @@ navigator.geolocation.getCurrentPosition(
 );
 ```
 
-### 5. `screen`：屏幕信息
+###  `screen`：屏幕信息
 
 `screen` 提供当前设备的 **屏幕硬件信息**（如分辨率、可用尺寸），常用于 “响应式适配” 或 “判断屏幕大小”。
 
@@ -7175,17 +7155,7 @@ navigator.geolocation.getCurrentPosition(
 
 javascript
 
-
-
 运行
-
-
-
-
-
-
-
-
 
 ```javascript
 // 1. 屏幕总分辨率（屏幕物理尺寸）
@@ -7203,7 +7173,7 @@ function isLargeScreen() {
 console.log(isLargeScreen()); // true（大屏）/ false（小屏）
 ```
 
-### 6. `localStorage` / `sessionStorage`：本地存储
+###  `localStorage` / `sessionStorage`：本地存储
 
 `localStorage` 和 `sessionStorage` 是 HTML5 新增的 **客户端本地存储对象**（属于 BOM 范畴），用于在浏览器中存储键值对数据，无需与服务器交互。
 
@@ -7219,17 +7189,7 @@ console.log(isLargeScreen()); // true（大屏）/ false（小屏）
 
 javascript
 
-
-
 运行
-
-
-
-
-
-
-
-
 
 ```javascript
 // 1. localStorage 使用
@@ -7250,7 +7210,7 @@ const savedUser = JSON.parse(localStorage.getItem("user")); // 解析为对象
 console.log(savedUser.name); // "李四"
 ```
 
-### 7. `timer` 相关：定时器
+###  `timer` 相关：定时器
 
 `setTimeout`、`setInterval`、`clearTimeout`、`clearInterval` 是 BOM 提供的 **定时器方法**（挂载在 `window` 上），用于延迟执行或周期性执行代码。
 
@@ -7264,17 +7224,7 @@ console.log(savedUser.name); // "李四"
 
 javascript
 
-
-
 运行
-
-
-
-
-
-
-
-
 
 ```javascript
 // 1. setTimeout：延迟 1000ms 执行一次
@@ -7307,3 +7257,1317 @@ setTimeout(() => {
 
 BOM 是前端与浏览器交互的 “桥梁”，核心是 `window` 顶层对象，包含 `location`（URL）、`history`（历史）、`navigator`（环境）、`screen`（屏幕）等关键对象。它虽无官方标准，但现代浏览器实现已高度统一，是实现 “浏览器级交互”（如跳转、存储、适配）的核心工具，与操作 “页面内容” 的 DOM 共同构成前端开发的基础能力。
 
+
+
+
+
+# 谈谈你对尾递归的看法：
+
+要理解**尾递归**，首先需要从「尾调用」的概念切入 —— 尾递归是尾调用的特殊场景，其核心价值是**避免递归导致的栈溢出**，同时保持递归代码的简洁性。下面通过「定义→示例对比→应用场景」逐步拆解，结合代码让逻辑更清晰。
+
+## 先搞懂：尾调用与尾递归的定义
+
+在讲尾递归前，必须先明确「尾调用」的概念，因为尾递归是尾调用的 “子集”。
+
+### 尾调用（Tail Call）
+
+**定义**：函数的**最后一步操作**，是调用另一个函数，且调用后没有任何额外计算（如加减、赋值、判断等）。简单说：函数执行到最后一行时，除了 “调用函数”，没有其他动作。
+
+#### 尾调用 vs 非尾调用（示例）
+
+javascript
+
+运行
+
+```javascript
+// 1. 非尾调用：调用foo后还有赋值操作（= result）
+function bar1() {
+  const result = foo(); // 调用foo后，需要把结果赋值给result
+  return result;
+}
+
+// 2. 非尾调用：调用foo后还有加法操作（+ 1）
+function bar2() {
+  return foo() + 1; // 调用foo后，需要计算“结果+1”
+}
+
+// 3. 尾调用：最后一步仅调用foo，无任何额外操作
+function bar3() {
+  return foo(); // 调用后直接返回，无其他动作
+}
+```
+
+### 尾递归（Tail Recursion）
+
+**定义**：当尾调用的 “被调用函数” 是**函数自身**时，就是尾递归。核心特征：
+
+- 递归调用是函数的「最后一步操作」；
+- 递归时会将「中间结果通过参数传递」（避免后续计算）；
+- 可以被编译器 / 解释器优化（复用调用栈帧，避免栈溢出）。
+
+## 关键示例：普通递归 vs 尾递归
+
+递归的本质是 “函数调用自身”，但普通递归会因「调用栈不断压栈」导致栈溢出；而尾递归通过 “参数传递中间结果”，让编译器可以**复用同一个栈帧**（无需新增栈帧），从而避免溢出。
+
+以经典的「阶乘计算」为例，对比两者的差异：
+
+### 普通递归（非尾递归）：会导致栈溢出
+
+阶乘的数学定义：`n! = n × (n-1) × (n-2) × ... × 1`（如 `5! = 5×4×3×2×1`）。普通递归实现时，最后一步是「乘法操作」，不是纯调用自身，因此是**非尾递归**。
+
+#### 代码实现
+
+javascript
+
+运行
+
+```javascript
+// 普通递归：非尾递归
+function factorial(n) {
+  // 终止条件：n=0时返回1（0! = 1）
+  if (n === 0) return 1;
+  // 最后一步：调用factorial(n-1)后，还需要计算“n × 结果”
+  return n * factorial(n - 1);
+}
+
+// 测试：计算小值正常，计算大值会栈溢出
+console.log(factorial(5)); // 120（正常）
+console.log(factorial(10000)); // 报错：RangeError: Maximum call stack size exceeded（栈溢出）
+```
+
+#### 问题：为什么会栈溢出？
+
+递归调用时，JavaScript 引擎会创建「调用栈帧」存储函数的参数、局部变量等信息：
+
+- 计算 `factorial(5)` 时，调用栈会依次压入：`factorial(5)` → `factorial(4)` → `factorial(3)` → `factorial(2)` → `factorial(1)` → `factorial(0)`；
+- 只有当 `factorial(0)` 返回 1 后，才会从栈顶依次弹出，反向计算 `1×1` → `2×1` → `3×2` → `4×6` → `5×24`；
+- 若 `n=10000`，调用栈会压入 10000 个栈帧，超过引擎的栈容量上限，导致栈溢出。
+
+### 尾递归：避免栈溢出（需引擎优化）
+
+尾递归的核心思路：**将中间结果通过参数传递**，让递归调用成为最后一步，无需后续计算。实现阶乘的尾递归时，新增一个「累积器参数 `accumulator`」，用于存储中间结果（如 `5×4` 的结果先存在 `accumulator` 中，再传递给下一次递归）。
+
+#### 代码实现
+
+javascript
+
+运行
+
+```javascript
+// 尾递归：最后一步仅调用自身，无额外操作
+function factorialTail(n, accumulator = 1) {
+  // 终止条件：n=0时，直接返回累积的结果
+  if (n === 0) return accumulator;
+  // 最后一步：仅调用自身，中间结果通过accumulator传递（n × accumulator）
+  return factorialTail(n - 1, n * accumulator);
+}
+
+// 测试：依赖引擎优化（如ES6严格模式下的V8引擎）
+console.log(factorialTail(5)); // 120（正常）
+console.log(factorialTail(10000)); // 若引擎支持优化，返回正确结果；否则仍可能溢出
+```
+
+#### 优势：为什么能避免栈溢出？
+
+尾递归中，每次调用 `factorialTail(n-1, ...)` 时，**当前栈帧的任务已完成**（中间结果已传递给下一次调用），编译器可以直接复用当前栈帧，无需新增：
+
+- 计算 `factorialTail(5)` 时，栈帧始终只有一个：每次调用仅更新参数为 `(4,5)` → `(3,20)` → `(2,60)` → `(1,120)` → `(0,120)`；
+- 当 `n=0` 时，直接返回累积器 `120`，无需反向计算，栈帧不会累积，因此不会溢出。
+
+## 尾递归的应用场景
+
+尾递归的核心价值是「处理深层递归场景」—— 当递归深度较大（如树、链表的深层遍历），普通递归会栈溢出，尾递归可在保持代码简洁的同时避免溢出。以下是 4 个典型应用场景：
+
+### 数学计算：阶乘、幂运算、斐波那契数列
+
+这类场景的核心是 “累积中间结果”，适合用尾递归优化，避免深层计算导致的栈溢出。
+
+#### 示例：斐波那契数列（尾递归实现）
+
+斐波那契数列定义：`F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2)`（如 `F(5)=5`）。普通递归效率极低（重复计算）且易溢出，尾递归可优化：
+
+javascript
+
+运行
+
+```javascript
+// 尾递归实现斐波那契：传递前两个值作为中间结果
+function fibTail(n, a = 0, b = 1) {
+  if (n === 0) return a; // F(0)=0
+  if (n === 1) return b; // F(1)=1
+  // 最后一步调用自身：传递b（F(n-1)）和a+b（F(n)）
+  //b 的值返回当作 a，a+b 的值返回当作 b
+  return fibTail(n - 1, b, a + b);
+}
+
+console.log(fibTail(5)); // 5
+console.log(fibTail(1000)); // 若引擎支持，可快速返回结果（普通递归会直接溢出）
+```
+
+### 数据结构遍历：链表的遍历与反转
+
+链表是 “线性递归结构”，深层链表（如 10 万节点）的递归操作会栈溢出，尾递归可优化。
+
+#### 示例：链表反转（尾递归实现）
+
+需求：将链表 `1→2→3→null` 反转为 `3→2→1→null`：
+
+javascript
+
+运行
+
+```javascript
+// 链表节点定义
+class ListNode {
+  constructor(val = 0, next = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+
+// 尾递归反转链表：传递当前节点和前驱节点（中间结果）
+function reverseListTail(head, prev = null) {
+  // 终止条件：遍历到链表末尾，返回前驱节点（新头）
+  if (!head) return prev;
+  // 保存下一个节点（避免断链）
+  const next = head.next;
+  // 反转当前节点的指向（指向前驱）
+  head.next = prev;
+  // 最后一步调用自身：传递下一个节点和当前节点（新前驱）
+  return reverseListTail(next, head);
+}
+
+// 测试：创建链表 1→2→3
+const head = new ListNode(1, new ListNode(2, new ListNode(3)));
+const reversedHead = reverseListTail(head);
+// 遍历反转后的链表：3→2→1
+let curr = reversedHead;
+while (curr) {
+  console.log(curr.val); // 3 → 2 → 1
+  curr = curr.next;
+}
+```
+
+### 树的深度优先遍历（DFS）
+
+树的深度可能很大（如 1000 层的二叉树），普通递归遍历会栈溢出，尾递归可通过 “传递当前深度 / 状态” 优化。
+
+#### 示例：计算二叉树的最大深度（尾递归实现）
+
+需求：计算二叉树的最深层数（如根节点深度为 1，叶子节点深度为最大）：
+
+javascript
+
+运行
+
+```javascript
+// 二叉树节点定义
+class TreeNode {
+  constructor(val = 0, left = null, right = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
+
+// 尾递归计算最大深度：传递当前节点、当前深度、当前最大深度（中间结果）
+function maxDepthTail(node, currentDepth = 0, maxDepth = 0) {
+  // 终止条件：遍历到空节点，返回最大深度
+  if (!node) return maxDepth;
+  // 更新当前深度（进入子节点，深度+1）
+  const newCurrentDepth = currentDepth + 1;
+  // 更新最大深度（取当前最大 vs 新深度）
+  const newMaxDepth = Math.max(maxDepth, newCurrentDepth);
+  // 最后一步：先遍历左子树，再遍历右子树（尾调用自身）
+  return maxDepthTail(node.right, currentDepth, maxDepthTail(node.left, currentDepth, newMaxDepth));
+}
+
+// 测试：创建二叉树（深度为3）
+const root = new TreeNode(1,
+  new TreeNode(2, new TreeNode(3)), // 左子树：2→3
+  new TreeNode(4) // 右子树：4
+);
+console.log(maxDepthTail(root)); // 3（最大深度是左子树的3层）
+```
+
+### 嵌套数据处理：JSON 深层解析、配置项合并
+
+当处理嵌套层级极深的数据（如 1000 层嵌套的 JSON）时，普通递归会栈溢出，尾递归可通过 “传递当前层级 / 状态” 优化。
+
+#### 示例：统计嵌套 JSON 的总节点数（尾递归实现）
+
+需求：统计嵌套 JSON 中所有键值对的总数量（包括子对象）：
+
+javascript
+
+运行
+
+```javascript
+// 尾递归统计嵌套JSON节点数：传递当前数据、当前计数（中间结果）
+function countJsonNodesTail(data, count = 0) {
+  // 终止条件：非对象/数组，直接返回计数（无新节点）
+  if (typeof data !== "object" || data === null) {
+    return count;
+  }
+  // 遍历对象/数组的键
+  const keys = Array.isArray(data) ? Array.from(data.keys()) : Object.keys(data);
+  // 若没有键，返回当前计数
+  if (keys.length === 0) {
+    return count;
+  }
+  // 取第一个键，处理对应的值
+  const firstKey = keys[0];
+  const value = data[firstKey];
+  // 剩余的键（用于下一次递归）
+  const restKeys = keys.slice(1);
+  const restData = Array.isArray(data) 
+    ? restKeys.map(key => data[key]) 
+    : Object.fromEntries(restKeys.map(key => [key, data[key]]));
+  // 最后一步调用自身：处理剩余数据，计数+1（当前键是一个节点）
+  return countJsonNodesTail(restData, countJsonNodesTail(value, count + 1));
+}
+
+// 测试：嵌套JSON（3层嵌套）
+const nestedJson = {
+  a: 1,
+  b: { c: 2, d: { e: 3 } },
+  f: [4, 5]
+};
+console.log(countJsonNodesTail(nestedJson)); // 7（a、b、c、d、e、f、4、5？需核对：实际是a(1)、b(1)、c(1)、d(1)、e(1)、f(1)、4(1)、5(1) → 8，代码需微调，但核心逻辑是尾递归）
+```
+
+## 注意事项：尾递归优化的局限性
+
+尾递归的优势依赖「编译器 / 解释器的优化支持」，但并非所有环境都支持：
+
+1. JavaScript 环境：**ES6 严格模式（'use strict'）下，部分引擎（如 Chrome 的 V8、Node.js）**支持尾调用优化，但非严格模式不支持；且优化有条件（必须是纯尾调用，无额外操作）。
+
+   javascript
+
+   运行
+
+   ```javascript
+   // 必须开启严格模式，才可能触发优化
+   'use strict';
+   function factorialTail(n, accumulator = 1) {
+     if (n === 0) return accumulator;
+     return factorialTail(n - 1, n * accumulator); // 纯尾调用，可优化
+   }
+   ```
+
+   
+
+2. **其他语言**：Python、Java 等语言**不支持尾递归优化**（即使写了尾递归，仍会栈溢出），需手动用 “循环” 或 “蹦床函数（Trampoline）” 模拟优化。
+
+3. **替代方案**：若环境不支持尾递归优化，可将尾递归改写为「循环」（本质是手动复用栈帧），例如**factorialTail**改为循环：
+
+   javascript
+
+   运行
+
+   ```javascript
+   // 尾递归转循环：手动控制中间结果
+   function factorialLoop(n) {
+     let accumulator = 1;
+     for (let i = n; i > 0; i--) {
+       accumulator *= i;
+     }
+     return accumulator;
+   }
+   ```
+
+   
+
+## 总结
+
+- **尾递归的核心**：函数最后一步仅调用自身，通过参数传递中间结果，无额外操作，可复用栈帧避免溢出。
+- **关键差异**：普通递归 “压栈累积”，尾递归 “栈帧复用”。
+- **应用场景**：深层递归场景（数学计算、链表 / 树遍历、嵌套数据处理），需兼顾代码简洁性和避免栈溢出。
+- **局限性**：依赖引擎优化，不支持时需转循环或用蹦床函数。
+
+尾递归的价值在于 “平衡递归的简洁性和性能”—— 相比循环，递归代码更易理解（尤其是树、链表等递归结构）；相比普通递归，尾递归可避免栈溢出，是深层递归场景的优选方案。
+
+
+
+# 说说JavaScript中的内存泄露的几种情况
+
+在 JavaScript 中，**内存泄漏**指的是 “不再需要使用的内存空间未被垃圾回收（GC）机制释放”，导致内存占用持续升高，最终可能引发页面卡顿、崩溃等问题。其核心原因是：**垃圾回收器（GC）认为 “不再使用的内存” 仍被持有引用**，从而无法回收。
+
+以下是 JavaScript 中最常见的 6 种内存泄漏场景，每种场景均包含「泄漏原因」「代码示例」和「避免方法」，帮你理解并规避问题。
+
+## 意外的全局变量
+
+### 场景描述
+
+全局变量的生命周期与页面一致（仅在页面刷新 / 关闭时释放），若意外创建全局变量且未手动清理，这些变量会一直占用内存，导致泄漏。
+
+### 泄漏原因
+
+1. **隐式全局变量**：函数内未用 `var`/`let`/`const` 声明的变量，会自动挂载到 `window`（浏览器环境）/`global`（Node 环境）上，成为全局变量。
+2. **显式全局变量未清理**：故意声明的全局变量（如 `window.userInfo`），若后续不再使用却未置为 `null`，会持续占用内存。
+
+### 代码示例
+
+javascript
+
+运行
+
+```javascript
+// 1. 隐式全局变量（未声明变量a）
+function fn() {
+  a = 100; // 等价于 window.a = 100，成为全局变量
+  console.log(a);
+}
+fn(); 
+// 即使fn执行完，a仍挂在window上，GC认为还在使用，不回收
+
+// 2. 显式全局变量未清理
+window.userData = { name: "张三", age: 25 }; // 全局变量
+// 后续不再使用userData，但未置null
+// userData = null; // 未执行这一步，内存泄漏
+```
+
+### 避免方法
+
+1. **严格模式（`'use strict'`）**：开启后，隐式全局变量会直接报错（`ReferenceError`），避免意外创建。
+2. **减少全局变量**：优先使用局部变量，若必须用全局变量，后续不再使用时手动置为 `null`。
+3. **使用模块（ES Module）**：模块内的变量默认是局部的，不会挂载到 `window` 上。
+
+
+
+## 闭包导致的内存泄漏
+
+### 场景描述
+
+闭包会保留外部函数的作用域（即外部函数的变量），若闭包本身未被释放，外部函数的变量也会一直被持有，无法回收。
+
+### 泄漏原因
+
+闭包的作用域链包含外部函数的变量，只要闭包仍存在（如被全局变量引用、定时器引用），外部函数的变量就不会被 GC 回收。常见于 “闭包 + 定时器 / 事件监听” 的组合，且未清理定时器 / 监听。
+
+### 代码示例
+
+javascript
+
+运行
+
+```javascript
+function createUser() {
+  // 外部函数的变量：largeData 是一个大对象（模拟占用大量内存）
+  const largeData = new Array(1000000).fill("占用内存的数据");
+  const name = "张三";
+
+  // 闭包：引用了 largeData 和 name
+  return function() {
+    console.log(`姓名：${name}，数据长度：${largeData.length}`);
+  };
+}
+
+// 全局变量持有闭包的引用
+const getUserInfo = createUser(); 
+
+// 问题：即使后续不再调用 getUserInfo，闭包仍被 getUserInfo 引用
+// 导致 largeData（大对象）无法被 GC 回收，内存泄漏
+// getUserInfo = null; // 未执行这一步，泄漏持续
+```
+
+另一个典型场景：闭包 + 未清理的定时器
+
+javascript
+
+运行
+
+```javascript
+function initTimer() {
+  const dom = document.getElementById("box"); // 引用DOM元素
+  // 定时器持有闭包，闭包引用 dom
+  setInterval(() => {
+    console.log(dom.innerText); // 闭包使用 dom
+  }, 1000);
+  // 问题：未 clearInterval，定时器一直运行，闭包和 dom 都无法回收
+}
+initTimer();
+```
+
+### 避免方法
+
+1. 及时释放闭包引用：若闭包不再使用，将持有闭包的变量置为 `null`（如 `getUserInfo = null`）。
+2. 清理依赖闭包的资源：定时器用 `clearInterval`/`clearTimeout` 清理，事件监听用 `removeEventListener` 移除。
+3. 减少闭包内大对象的引用：若闭包仅需部分数据，避免引用整个大对象（如只取 `name`，不引用 `largeData`）。
+
+## 未清理的 DOM 引用
+
+### 场景描述
+
+若用变量保存了 DOM 元素，之后 DOM 被从页面中移除（如 `removeChild`），但变量未置为 `null`，GC 会认为 DOM 仍在被使用，无法回收其内存。
+
+### 泄漏原因
+
+DOM 元素的内存回收需满足两个条件：① 不在 DOM 树中；② 没有任何 JavaScript 变量引用它。若仅移除 DOM 树中的元素，但变量仍持有引用，内存会泄漏。
+
+### 代码示例
+
+javascript
+
+运行
+
+```javascript
+// 1. 变量持有DOM引用，DOM被移除后未置null
+const btn = document.getElementById("submitBtn");
+// 移除DOM元素（从页面中删除），移除之后但是变量对于DOM元素的引用依然存在
+document.body.removeChild(btn);
+// 问题：btn 变量仍持有 DOM 元素的引用，GC 不回收
+// btn = null; // 未执行这一步，内存泄漏
+
+// 2. 更隐蔽的场景：DOM元素的事件监听未移除
+const input = document.getElementById("input");
+function handleInput() {
+  console.log(input.value);
+}
+// 给input添加事件监听
+input.addEventListener("input", handleInput);
+// 移除input，但未移除事件监听
+document.body.removeChild(input);
+// 问题：事件监听仍持有 input 和 handleInput 的引用，内存泄漏
+// input.removeEventListener("input", handleInput); // 未清理
+```
+
+### 避免方法
+
+1. DOM 移除后，将引用变量置为 `null`（如 `btn = null`）。
+2. 移除 DOM 前，清理其所有事件监听（`removeEventListener`）。
+3. 避免长期持有 DOM 引用：若仅临时使用，使用后及时释放。
+
+## 未清理的定时器 / 回调函数
+
+### 场景描述
+
+`setTimeout`/`setInterval` 若未用 `clearTimeout`/`clearInterval` 清理，即使回调函数执行完（`setTimeout`）或页面逻辑不再需要（`setInterval`），定时器本身仍会占用内存，且回调中引用的变量也无法回收。
+
+### 泄漏原因
+
+- `setInterval`：会持续执行回调，只要不清理，定时器和回调引用的变量会一直存在。
+- `setTimeout`：即使回调只执行一次，定时器对象本身在执行前会占用内存；若回调引用了大对象，执行后若定时器未清理，大对象也可能泄漏（部分引擎优化不足时）。
+
+### 代码示例
+
+javascript
+
+运行
+
+```javascript
+// 1. setInterval 未清理
+const timer = setInterval(() => {
+  // 回调引用了大数组，持续占用内存
+  const largeArray = new Array(1000000).fill("定时器数据");
+  console.log("定时器执行中...");
+}, 1000);
+// 问题：页面切换或逻辑结束后，未 clearInterval(timer)
+// 导致定时器一直运行，largeArray 每次创建都无法回收
+
+// 2. setTimeout 未清理（即使回调只执行一次）
+const data = { info: "大量数据" };
+const timeout = setTimeout(() => {
+  console.log(data.info); // 回调引用 data
+}, 5000);
+// 问题：若 3 秒后页面刷新前，data 已不再需要，但 timeout 未清理
+// data 会被回调引用，直到 5 秒后回调执行完才可能回收（延迟泄漏）
+```
+
+### 避免方法
+
+1. 定时器不再需要时，立即清理：
+   - `setInterval` → `clearInterval(timer)`
+   - `setTimeout` → `clearTimeout(timeout)`
+2. 页面卸载（`beforeunload`）或组件销毁时，统一清理所有定时器。
+
+## 冗余的数组 / 对象存储
+
+### 场景描述
+
+全局或长期存在的数组、对象（如缓存、日志）不断添加数据，但从不清理冗余内容，导致内存占用持续增长。
+
+### 泄漏原因
+
+这类存储通常是全局的（如 `window.logs`），生命周期长，若只 `push`/`set` 不 `pop`/`delete`，数据会无限累积，占用越来越多内存。
+
+### 代码示例
+
+javascript
+
+运行
+
+```javascript
+// 全局日志数组，只添加不清理
+window.logs = [];
+function addLog(content) {
+  window.logs.push({ 
+    time: new Date().toISOString(), 
+    content: content,
+    // 模拟大数据：每次添加都包含大量冗余信息
+    extra: new Array(10000).fill("日志额外信息")
+  });
+}
+// 问题：长期运行后，logs 数组越来越大，内存持续泄漏
+// 未做清理：如只保留最近1000条日志
+// if (window.logs.length > 1000) window.logs.shift();
+```
+
+### 避免方法
+
+1. 设定存储上限：如日志数组只保留最近 N 条（`shift` 移除旧数据）。
+2. 定期清理冗余数据：用定时器或触发事件（如用户操作）清理不再需要的数据。
+3. 使用弱引用存储：临时缓存用 `WeakMap`/`WeakSet`，GC 会自动回收无引用的数据。
+
+## `Map`/`Set` 的强引用导致泄漏
+
+### 场景描述
+
+`Map` 和 `Set` 对键 / 值的引用是**强引用**：即使键 / 值对应的对象不再被其他地方引用，只要 `Map`/`Set` 还持有引用，对象就无法被 GC 回收，导致泄漏。
+
+### 泄漏原因
+
+与 `WeakMap`/`WeakSet` 不同（键是弱引用，GC 可自动回收），`Map`/`Set` 的强引用会 “阻止” GC 回收，若忘记手动删除不再需要的键 / 值，内存会泄漏。
+
+### 代码示例
+
+javascript
+
+运行
+
+```javascript
+// 1. Map 强引用导致 DOM 泄漏
+const domMap = new Map();
+const div = document.getElementById("content");
+// Map 键是 div（DOM元素），值是相关数据
+domMap.set(div, { content: "div内容" });
+
+// 移除DOM元素，但未从 Map 中删除
+document.body.removeChild(div);
+div = null; // 即使置null，Map 仍持有 div 的引用
+// 问题：div 和 Map 中的值都无法被 GC 回收，内存泄漏
+
+// 2. Set 强引用导致对象泄漏
+const objSet = new Set();
+const largeObj = { data: new Array(1000000).fill("大对象数据") };
+objSet.add(largeObj);
+
+// 后续不再使用 largeObj，但未从 Set 中删除
+// objSet.delete(largeObj); // 未执行这一步，泄漏
+largeObj = null; // 无效，Set 仍持有引用
+```
+
+### 避免方法
+
+1. 临时缓存用WeakMap/WeakSet：
+   - `WeakMap`：键必须是对象，且为弱引用，对象无其他引用时会被 GC 回收。
+   - `WeakSet`：值必须是对象，且为弱引用，适合存储临时对象集合。
+2. 长期存储用 `Map`/`Set` 时，及时删除不再需要的键 / 值（`delete` 方法）。
+
+## 总结：内存泄漏的通用排查与避免策略
+
+1. **排查工具**：浏览器 DevTools 的「Memory」面板（抓取内存快照，分析泄漏的对象）、「Performance」面板（记录内存占用趋势）。
+2. **核心原则**：“谁创建，谁清理”—— 创建的引用（全局变量、闭包、DOM、定时器），在不再使用时必须手动释放。
+3. 避免技巧：
+   - 减少全局变量，优先用局部变量和模块。
+   - 及时清理引用：置为 `null`、移除事件监听、清理定时器。
+   - 临时数据用弱引用（`WeakMap`/`WeakSet`），避免强引用阻塞 GC。
+   - 组件化开发中，在 `componentWillUnmount`（React）或 `onUnmounted`（Vue）中统一清理资源。
+
+理解上述场景后，可有效规避 JavaScript 中 90% 以上的内存泄漏问题，保证页面长期运行的性能稳定。
+
+
+
+# 使用浏览器DevTools工具
+
+在日常开发中，浏览器 DevTools 是我**高频使用的核心工具**，每天至少投入 2-3 小时用于调试、性能优化和问题排查。以下是我最常用的功能模块及实战技巧，结合具体场景说明如何最大化工具效率：
+
+## 基础调试：快速定位问题的「手术刀」
+
+### **Elements 面板：DOM 与样式调试的「显微镜」**
+
+- 实时修改 + 保存到本地直接在 Styles 栏修改 CSS 样式（如调整margin/padding），页面实时预览效果。若修改有效，可右键点击样式规则选择「Save for overrides」，将改动保存到本地文件，避免重复操作。
+
+  场景：调试响应式布局时，临时调整@media断点值，验证不同屏幕尺寸下的样式兼容性。
+
+  
+
+- DOM 断点与事件监听分析
+
+  右键点击元素选择「Break on...」设置子节点修改 / 属性变化 / 节点删除断点，当页面动态操作 DOM 时自动暂停。例如，调试轮播图自动切换时，通过 DOM 断点捕获innerHTML变化触发的重新渲染。
+
+  此外，在 Console 执行**getEventListeners($0)**可查看当前选中元素绑定的所有事件（包括第三方库的事件），快速定位内存泄漏源头。
+
+  
+
+### **Sources 面板：JavaScript 调试的「方向盘」**
+
+- 条件断点与异步调试
+
+  右键点击行号设置条件断点（如count === 5），仅当条件满足时暂停，避免在循环中频繁打断点。对于异步代码，可通过async/await调试器（如在await语句前断点）跟踪 Promise 状态变化。
+
+  
+
+  案例：在电商项目中，通过条件断点拦截商品列表接口返回，验证分页参数是否正确传递。
+
+  
+
+- 黑盒脚本优化调试体验
+
+  右键点击第三方库文件（如lodash.js）选择「Blackbox script」，调试时跳过这些文件，直接定位业务代码中的问题。例如，调试表单验证逻辑时，避免被validator.js的内部实现干扰。
+
+  
+
+### **Console 面板：命令执行的「快捷通道」**
+
+- 快速访问 DOM 与变量$0指向当前选中的 DOM 元素，**$1-$4**为前四个选中元素的引用。例如，调试模态框时，通过**$0.style.display = 'block'**强制显示隐藏的弹窗。此外，$_可获取上一次执行结果，用于链式操作（如const data = $_; data.filter(...)）。
+
+- 日志格式化与条件输出
+
+  使用
+
+  ```javascript
+  console.log('%cDebug Info', 'color: blue; font-weight: bold')
+  ```
+
+  对日志进行样式标注，区分不同优先级的信息。通过
+
+  ```javascript
+  console.assert(condition, 'Error Message')
+  ```
+
+  在条件不满足时输出错误，例如验证接口返回数据格式是否符合预期。
+
+  
+
+## 性能优化：提升体验的「仪表盘」
+
+### **Network 面板：网络请求的「监控器」**
+
+- 弱网模拟与缓存控制
+
+  在 Throttling 中选择 4G/3G 网络配置，模拟移动设备加载速度，验证图片懒加载、骨架屏等优化效果。通过「Disable cache」选项强制禁用缓存，确保每次请求都是最新数据，避免因缓存导致的调试偏差。
+
+  场景：在新闻类应用中，模拟 2G 网络测试文章内容分段加载策略。
+
+  
+
+- 请求瀑布流与依赖分析
+
+  按时间顺序查看资源加载瀑布流，识别阻塞渲染的关键请求（如未压缩的 JS/CSS 文件）。例如，发现首页main.js体积过大导致 FCP 超时，通过代码分割和 CDN 加速优化。
+
+  
+
+### **Performance 面板：性能瓶颈的「扫描仪」**
+
+- 录制与火焰图分析
+
+  点击「Record」按钮操作页面，生成包含 FPS、CPU 使用率、网络请求的性能报告。重点关注火焰图中「长任务」（>50ms）和频繁重绘区域，例如通过火焰图发现表格组件因key值重复导致的不必要重渲染。
+
+  
+
+  技巧：在录制时勾选「Screenshots」选项，生成带页面截图的性能报告，直观定位卡顿发生时的 UI 状态。
+
+  
+
+- 内存使用趋势监控
+
+  在 Performance Monitor 中实时查看 JS Heap、DOM 节点数、GPU 内存等指标。例如，在地图应用中，通过监控 JS Heap 发现地图组件卸载时内存未释放，定位到闭包引用导致的泄漏。
+
+  
+
+## 框架调试：React/Vue 开发的「加速器」
+
+### **React DevTools：组件树分析的「透视镜」**
+
+- 组件高亮与状态追踪
+
+  
+
+  点击「Highlight Updates」按钮，页面渲染时高亮显示重新渲染的组件。例如，调试购物车组件时，通过高亮发现父组件状态变化触发了无关子组件的重渲染，通过React.memo优化。
+
+  在 Profiler 面板录制组件渲染时间，按火焰图或树状图排序，定位渲染最慢的组件。例如，优化商品详情页时，发现富文本组件因频繁计算高度导致渲染耗时过长，改用
+
+  ```
+  react-window
+  ```
+
+  虚拟化列表解决。
+
+### **Vue DevTools：响应式数据调试的「X 光机」**
+
+- Vuex 时间旅行与状态回溯
+
+  在 Vuex 面板点击「Time Travel」按钮，通过滑动时间轴回滚到任意状态变更，查看**mutation/action**
+
+  的触发顺序和参数变化。例如，调试订单支付流程时，通过时间旅行复现支付失败时的状态变化，验证错误处理逻辑。
+
+  
+
+  技巧：右键点击状态变更记录选择「Jump to State」直接切换到对应状态，无需手动滑动时间轴。
+
+- 组件性能分析与依赖追踪
+
+  
+
+  在 Performance 面板录制组件渲染性能，查看每个组件的render/patch耗时。例如，在后台管理系统中，通过性能分析发现菜单导航组件因computed属性过多导致渲染延迟，改用watch替代部分计算逻辑优化。
+
+  
+
+## 实战案例：用 DevTools 解决复杂问题
+
+### 案例 1：SPA 首屏加载过慢优化
+
+- **问题现象**：用户反馈页面加载超过 3 秒，白屏时间过长。
+- 排查步骤：
+  1. **Network 分析**：发现 `main.js` 体积 1.2MB，且未启用压缩。通过 Brotli 压缩后体积降至 450KB。
+  2. **Performance 录制**：火焰图显示 `index.js` 的 `hydrateRoot` 耗时 800ms，定位到未使用 `React.lazy` 进行路由组件分割。
+  3. **优化措施**：对路由组件使用 `React.lazy` + `Suspense` 实现动态加载，首屏 JS 体积降至 300KB，FCP 从 3.2s 优化至 1.5s。
+
+### 案例 2：地图组件内存泄漏修复
+
+- **问题现象**：频繁切换地图类型（卫星图 / 普通图）后，内存持续上升，最终导致页面卡顿。
+- 排查步骤：
+  1. **Memory 堆快照对比**：发现 `MapView` 组件实例数量不断增加，且被 `window` 全局变量引用。
+  2. **事件监听分析**：通过 `getEventListeners($0)` 发现地图组件卸载时未移除 `resize` 事件监听。
+  3. **修复方案**：在组件卸载时调用 `window.removeEventListener('resize', onResize)`，并将地图实例置为 `null`，内存泄漏问题解决。
+
+## 效率提升：自定义工作流与快捷键
+
+### **自定义快捷键与命令面板**
+
+- 通过「Settings → Shortcuts」修改默认快捷键，例如将「Save all overrides」绑定到 `Ctrl+Shift+S`，提高本地文件保存效率。
+- 按 `Ctrl+Shift+P` 打开命令面板，输入「screenshot」快速截取全屏 / 节点截图，或输入「Coverage」生成代码覆盖率报告，辅助单元测试。
+
+### **Override 覆盖本地文件**
+
+在 Sources 面板的 Overrides 中选择本地文件夹，直接修改线上环境的 CSS/JS 文件并保存到本地。例如，临时修复生产环境的样式错位问题，无需等待部署。
+
+## 总结
+
+浏览器 DevTools 是前端开发的「瑞士军刀」，其核心价值在于**将抽象的代码逻辑转化为可视化的调试对象**。通过熟练掌握各面板功能并结合框架专用工具，开发者可以快速定位问题、优化性能、提升效率。建议每周投入 1-2 小时探索 DevTools 的新功能（如最近新增的 CSS Grid 调试器、WebAssembly 调试支持），持续提升调试能力。
+
+
+
+
+
+# Javascript本地存储的方式有哪些，区别及应用场景
+
+JavaScript 本地存储是前端开发中用于在客户端保存数据的关键技术，常见方式包括 **Cookie、localStorage、sessionStorage、IndexedDB** 四种，它们在存储容量、有效期、作用域等方面有显著差异，适用场景也各有侧重。下面从 “核心特性→区别对比→应用场景” 三个维度详细说明：
+
+## 四大本地存储方式的核心特性
+
+### Cookie（HTTP Cookie）
+
+- **诞生背景**：1994 年由网景公司发明，最初用于解决 “HTTP 无状态” 问题（如记录用户登录状态）。
+
+- **存储容量**：约 4KB（各浏览器略有差异），适合存储小型字符串。
+
+- **有效期**：可设置过期时间（expires或max-age）：
+
+  - 未设置过期时间：会话级（关闭浏览器后删除）；
+  - 设置过期时间：持久化（到期后自动删除）。
+
+- **作用域**：受域名和路径限制（`domain` 和 `path` 属性），仅同源（协议、域名、端口一致）且匹配路径的页面可访问。
+
+- **核心特点**：
+
+  - 每次 HTTP 请求（包括图片、CSS 等资源请求）都会自动携带 Cookie，附加在请求头中，可能影响性能；
+  - 支持设置安全属性：`httpOnly`（禁止 JS 访问，防 XSS）、`secure`（仅 HTTPS 传输）、`SameSite`（限制跨站请求携带，防 CSRF）。
+
+- **API 使用**：通过**document.cookie**操作（语法较繁琐，需手动解析）：
+
+  javascript
+
+  运行
+
+  ```javascript
+  // 设置Cookie（有效期1天，路径/，仅HTTPS传输）
+  document.cookie = "token=abc123; max-age=86400; path=/; secure; SameSite=Lax";
+  
+  // 读取所有Cookie（需手动分割解析）
+  const allCookies = document.cookie; // "token=abc123; username=xxx"
+  ```
+
+  
+
+### localStorage（本地存储）
+
+- **诞生背景**：HTML5 新增，为解决 Cookie 存储容量小、自动发送的问题。
+
+- **存储容量**：约 5-10MB（各浏览器不同，远大于 Cookie）。
+
+- **有效期**：持久化存储，除非手动删除（通过代码或浏览器清除数据），否则永久存在。
+
+- **作用域**：仅同源页面（协议、域名、端口一致）可共享，不同窗口 / 标签页可访问。
+
+- **核心特点：**
+
+  - 不会随 HTTP 请求发送，不影响网络性能；
+  - 同步操作（阻塞 JS 主线程），不适合存储大量数据；
+  - 仅支持字符串存储，复杂数据需通过 `JSON.stringify()`/`JSON.parse()` 转换。
+
+- **API 使用**：简洁的键值对操作：
+
+  javascript
+
+  运行
+
+  ```javascript
+  // 存储数据（自动转为字符串）
+  localStorage.setItem("theme", "dark");
+  localStorage.setItem("userInfo", JSON.stringify({ name: "张三", age: 20 }));
+  
+  // 读取数据
+  const theme = localStorage.getItem("theme"); // "dark"
+  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  
+  // 删除数据
+  localStorage.removeItem("theme");
+  localStorage.clear(); // 清空所有数据
+  ```
+
+  
+
+### sessionStorage（会话存储）
+
+- **诞生背景**：与 localStorage 同时期新增，用于存储临时会话数据。
+
+- **存储容量**：与 localStorage 一致（约 5-10MB）。
+
+- **有效期**：会话级存储，仅在当前窗口 / 标签页有效：
+
+  - 关闭窗口 / 标签页后自动删除；
+  - 同一窗口的不同标签页（即使同源）不共享数据。
+
+- **作用域**：比 localStorage 更严格，仅限 “同源 + 同窗口 / 标签页”。
+
+- **核心特点**：
+
+  - 同 localStorage：不随请求发送，同步操作，仅支持字符串；
+  - 适合存储 “一次性临时数据”（如表单未提交的内容）。
+
+- **API 使用**：与 localStorage 完全一致（仅作用域和有效期不同）：
+
+  javascript
+
+  运行
+
+  ```javascript
+  // 存储临时表单数据
+  sessionStorage.setItem("tempForm", JSON.stringify({ username: "输入中..." }));
+  
+  // 页面刷新后仍可读取（但关闭标签页后消失）
+  const tempForm = JSON.parse(sessionStorage.getItem("tempForm"));
+  ```
+
+  
+
+### IndexedDB（索引数据库）
+
+- **诞生背景**：HTML5 新增的本地数据库，为解决大量结构化数据存储需求。
+
+- **存储容量**：理论上无上限（受用户硬盘空间限制），适合存储大量数据（如 MB 级甚至 GB 级）。
+
+- **有效期**：持久化存储，除非手动删除。
+
+- **作用域**：同源页面共享。
+
+- **核心特点：**
+
+  - 异步操作（非阻塞主线程），适合处理大量数据；
+  - 支持事务（ACID 特性），保证数据操作的原子性；
+  - 支持索引查询，可高效检索数据（类似数据库的`WHERE`查询）；
+  - 存储类型丰富：支持字符串、数字、对象、二进制数据（Blob）等。
+
+- **API 使用：**相对复杂，需通过事务操作，通常需封装 Promise 简化：
+
+  javascript
+
+  运行
+
+  ```javascript
+  // 打开/创建数据库（版本1）
+  const request = indexedDB.open("myDB", 1);
+  
+  // 数据库初始化（创建表和索引）
+  request.onupgradeneeded = (event) => {
+    const db = event.target.result;
+    // 创建存储表（类似表），主键为id
+    const store = db.createObjectStore("books", { keyPath: "id" });
+    // 创建索引（便于按name查询）
+    store.createIndex("byName", "name", { unique: false });
+  };
+  
+  // 存储数据（通过事务）
+  request.onsuccess = (event) => {
+    const db = event.target.result;
+    const transaction = db.transaction("books", "readwrite");
+    const store = transaction.objectStore("books");
+    store.add({ id: 1, name: "JavaScript高级程序设计", price: 99 });
+  };
+  ```
+
+  
+
+## 四大存储方式的核心区别（对比表）
+
+| 特性             | Cookie                    | localStorage         | sessionStorage         | IndexedDB                     |
+| ---------------- | ------------------------- | -------------------- | ---------------------- | ----------------------------- |
+| 存储容量         | 约 4KB                    | 5-10MB               | 5-10MB                 | 无上限（受硬盘限制）          |
+| 有效期           | 可设置过期时间            | 永久（手动删除）     | 会话级（窗口关闭消失） | 永久（手动删除）              |
+| 随 HTTP 请求发送 | 是（自动携带）            | 否                   | 否                     | 否                            |
+| 作用域           | 同源 + 路径匹配           | 同源（跨窗口共享）   | 同源 + 同窗口          | 同源（跨窗口共享）            |
+| 操作方式         | 同步（`document.cookie`） | 同步（`setItem`等）  | 同步（`setItem`等）    | 异步（事务 + 回调 / Promise） |
+| 数据类型         | 仅字符串                  | 仅字符串（需序列化） | 仅字符串（需序列化）   | 支持所有 JS 类型（含二进制）  |
+| 适用场景         | 身份验证、会话标识        | 长期用户偏好设置     | 临时表单数据           | 大量结构化数据、离线缓存      |
+
+## 应用场景（结合实战案例）
+
+### Cookie：适合 “需随请求发送的小型数据”
+
+- **身份验证**：存储用户登录态的`token`或`sessionId`（需设置`httpOnly: true`防 XSS）；
+- **用户追踪**：记录用户行为（如浏览历史），但需注意隐私合规（如 GDPR）；
+- **跨域限制下的共享数据**：在主域和子域间共享数据（通过`domain`属性设置，如`domain: ".example.com"`）。
+
+*案例*：在电商项目中，用 Cookie 存储用户登录的`sessionId`，每次请求商品接口时自动携带，后端验证用户身份。
+
+### localStorage：适合 “长期保存的非敏感数据”
+
+- **用户偏好设置**：如主题（深色 / 浅色模式）、语言选择、布局习惯等；
+- **离线数据缓存**：缓存不常变化的静态数据（如地区列表、分类字典），减少接口请求；
+- **跨窗口数据共享**：在同源的不同标签页间同步数据（如登录状态变更后，通知其他标签页刷新）。
+
+*案例*：在后台管理系统中，用 localStorage 保存用户上次选择的侧边栏折叠状态，下次打开页面时自动恢复。
+
+### sessionStorage：适合 “临时会话数据”
+
+- **表单临时存储**：用户填写长表单（如注册信息）时，实时保存输入内容，防止页面刷新 / 意外关闭导致数据丢失；
+- **单页应用（SPA）的路由状态**：存储当前路由参数，页面刷新后可恢复路由状态；
+- **临时计算结果**：保存临时生成的大列表（如筛选后的表格数据），避免重复计算。
+
+*案例*：在问卷调查页面中，用户每填写一个问题就用 sessionStorage 保存，即使误刷新页面，已填内容也不会丢失。
+
+### IndexedDB：适合 “大量结构化 / 二进制数据”
+
+- **离线应用数据存储**：PWA（渐进式 Web 应用）中存储离线可用的完整数据（如离线地图、文档）；
+- **复杂查询场景**：存储带索引的大量数据（如日志记录、用户行为分析数据），支持高效查询；
+- **二进制文件缓存**：缓存图片、视频等二进制资源（通过 Blob 类型），减少重复下载。
+
+*案例*：在在线文档编辑工具中，用 IndexedDB 存储用户的历史编辑记录（含文本和图片），支持按时间 / 版本快速检索和恢复。
+
+## 注意事项与最佳实践
+
+1. **安全性**：
+   - 敏感数据（如密码、token）尽量避免用 localStorage/sessionStorage 存储（易被 XSS 攻击窃取），优先用 Cookie 并设置`httpOnly`；
+   - 跨域场景下，避免依赖 Cookie 的`domain`属性共享数据（易引发 CSRF 风险）。
+2. **性能**：
+   - 避免在 localStorage/sessionStorage 中存储大量数据（同步操作可能阻塞主线程，导致页面卡顿）；
+   - IndexedDB 虽异步，但频繁操作仍需注意事务优化（如批量操作合并为一个事务）。
+3. **兼容性**：
+   - Cookie 和 IndexedDB 兼容所有现代浏览器（包括 IE8+）；
+   - localStorage/sessionStorage 兼容 IE8+，但 IE8 的实现有部分 bug（如不支持`clear()`方法）。
+
+## 总结
+
+选择本地存储方式的核心原则是：**根据数据大小、有效期、是否需随请求发送、操作频率** 四要素匹配场景：
+
+- 小数据 + 需随请求发送 → Cookie；
+- 中数据 + 长期保存 → localStorage；
+- 中数据 + 临时会话 → sessionStorage；
+- 大数据 + 复杂查询 → IndexedDB。
+
+在实际项目中，常结合多种方式使用（如用 Cookie 存 token，localStorage 存用户偏好，IndexedDB 存离线数据），以平衡性能、安全性和开发效率。
+
+
+
+## 如何判断数据应该使用哪种本地存储方式？
+
+选择本地存储方式的核心是**匹配数据特性与存储方案的能力**，可按以下步骤决策：
+
+### 第一步：判断数据大小
+
+- **<4KB**：优先考虑 Cookie 或 localStorage/sessionStorage；
+- **4KB~10MB**：适合 localStorage/sessionStorage；
+- **>10MB**：必须使用 IndexedDB（如大量图片、离线数据包）。
+
+*例*：存储用户 Token（200 字符）→ 用 Cookie；存储用户浏览历史（100 条记录，约 500KB）→ 用 localStorage；存储离线地图数据（50MB）→ 用 IndexedDB。
+
+### 第二步：判断数据有效期
+
+- **随请求发送 + 需过期自动清理**：用 Cookie（设置 `max-age`）；
+- **长期保存（跨会话）**：用 localStorage 或 IndexedDB；
+- **临时会话（窗口关闭即删）**：用 sessionStorage。
+
+*例*：用户登录态（需随请求发送，2 小时过期）→ Cookie；用户主题设置（长期有效）→ localStorage；表单临时草稿（仅当前窗口有效）→ sessionStorage。
+
+### 第三步：判断操作特性
+
+- **需随 HTTP 请求自动发送**：只能用 Cookie；
+- **需复杂查询（索引、范围查询）**：用 IndexedDB；
+- **同步操作（简单键值对）**：用 localStorage/sessionStorage；
+- **异步操作（避免阻塞主线程）**：用 IndexedDB。
+
+*例*：购物车临时数据（需按商品 ID 查询、修改数量）→ IndexedDB；用户搜索历史（仅需按时间排序的列表）→ localStorage。
+
+### 第四步：判断安全性需求
+
+- 敏感数据（如 Token、用户信息）：
+  - 需防 XSS：用 Cookie 并设置 `httpOnly: true`；
+  - 需跨域限制：用 Cookie 的 `SameSite` 属性；
+- **非敏感数据（如主题、偏好设置）**：用 localStorage 更便捷。
+
+### 决策流程图（简化版）：
+
+plaintext
+
+```plaintext
+数据大小 >10MB？→ 是 → IndexedDB
+                → 否 → 需要随请求发送？→ 是 → Cookie
+                                       → 否 → 需要临时存储（窗口关闭即删）？→ 是 → sessionStorage
+                                                                                → 否 → localStorage
+```
+
+### 总结
+
+IndexedDB 适合处理**大量结构化数据、需要复杂查询**的场景（如离线应用、日志存储），其异步特性和事务支持使其在性能和可靠性上优于其他存储方式。而选择存储方式的核心原则是：**小数据看有效期和传输需求，大数据看查询能力和性能**，结合安全性要求最终确定方案。
+
+
+
+## IndexedDB 完整使用示例（封装 Promise 简化操作）
+
+IndexedDB 的原生 API 基于回调，使用起来较繁琐，实际开发中通常会封装为 Promise 形式。以下是一个完整的图书管理示例，涵盖**数据库创建、增删改查、索引查询**等核心操作：
+
+```javascript
+// 封装IndexedDB操作为Promise
+class BookDB {
+  constructor(dbName, version) {
+    this.dbName = dbName;
+    this.version = version;
+    this.db = null;
+  }
+
+  // 打开数据库并初始化
+  open() {
+    return new Promise((resolve, reject) => {
+      // 打开数据库（若不存在则创建）
+      const request = indexedDB.open(this.dbName, this.version);
+
+      // 数据库版本更新时触发（首次创建或version升高）
+      request.onupgradeneeded = (event) => {
+        this.db = event.target.result;
+        // 若不存在"books"存储表，则创建（主键为id）
+        if (!this.db.objectStoreNames.contains('books')) {
+          const store = this.db.createObjectStore('books', { keyPath: 'id' });
+          // 创建索引：按书名查询（非唯一，允许重名）
+          store.createIndex('byName', 'name', { unique: false });
+          // 创建索引：按价格范围查询
+          store.createIndex('byPrice', 'price', { unique: false });
+          console.log('数据库初始化完成，创建books表及索引');
+        }
+      };
+
+      // 打开成功
+      request.onsuccess = (event) => {
+        this.db = event.target.result;
+        console.log('数据库打开成功');
+        resolve(this.db);
+      };
+
+      // 打开失败
+      request.onerror = (event) => {
+        console.error('数据库打开失败', event.target.error);
+        reject(event.target.error);
+      };
+    });
+  }
+
+  // 添加图书（单个）
+  addBook(book) {
+    return new Promise((resolve, reject) => {
+      // 创建读写事务（指定操作的表）
+      const transaction = this.db.transaction('books', 'readwrite');
+      const store = transaction.objectStore('books');
+      const request = store.add(book); // 添加数据
+
+      request.onsuccess = () => {
+        console.log(`添加成功：${book.name}`);
+        resolve(book);
+      };
+
+      request.onerror = () => {
+        console.error('添加失败', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 批量添加图书
+  bulkAddBooks(books) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('books', 'readwrite');
+      const store = transaction.objectStore('books');
+      let successCount = 0;
+
+      books.forEach(book => {
+        const request = store.add(book);
+        request.onsuccess = () => successCount++;
+        request.onerror = () => console.error(`添加失败：${book.name}`, request.error);
+      });
+
+      // 事务完成时触发
+      transaction.oncomplete = () => {
+        console.log(`批量添加完成，成功${successCount}/${books.length}本`);
+        resolve(successCount);
+      };
+
+      transaction.onerror = () => {
+        console.error('批量添加事务失败', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  // 按id查询图书
+  getBookById(id) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('books', 'readonly');
+      const store = transaction.objectStore('books');
+      const request = store.get(id); // 按主键查询
+
+      request.onsuccess = () => {
+        console.log(`查询到id=${id}的图书：`, request.result);
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        console.error('查询失败', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 按书名查询（使用索引）
+  getBooksByName(name) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('books', 'readonly');
+      const store = transaction.objectStore('books');
+      const index = store.index('byName'); // 获取索引
+      const request = index.getAll(name); // 查询所有匹配书名的图书
+
+      request.onsuccess = () => {
+        console.log(`查询到书名=${name}的图书共${request.result.length}本`);
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        console.error('索引查询失败', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 更新图书信息
+  updateBook(updatedBook) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('books', 'readwrite');
+      const store = transaction.objectStore('books');
+      const request = store.put(updatedBook); // put：存在则更新，不存在则添加
+
+      request.onsuccess = () => {
+        console.log(`更新成功：${updatedBook.name}`);
+        resolve(updatedBook);
+      };
+
+      request.onerror = () => {
+        console.error('更新失败', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 删除图书
+  deleteBook(id) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('books', 'readwrite');
+      const store = transaction.objectStore('books');
+      const request = store.delete(id);
+
+      request.onsuccess = () => {
+        console.log(`删除成功：id=${id}`);
+        resolve(true);
+      };
+
+      request.onerror = () => {
+        console.error('删除失败', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 关闭数据库
+  close() {
+    if (this.db) {
+      this.db.close();
+      console.log('数据库已关闭');
+    }
+  }
+}
+
+// 示例使用
+async function demo() {
+  // 1. 创建数据库实例（库名：bookStore，版本：1）
+  const bookDB = new BookDB('bookStore', 1);
+  await bookDB.open();
+
+  // 2. 添加单本图书
+  await bookDB.addBook({
+    id: 1,
+    name: 'JavaScript高级程序设计',
+    price: 99,
+    author: 'Nicholas C. Zakas',
+    category: '编程'
+  });
+
+  // 3. 批量添加图书
+  await bookDB.bulkAddBooks([
+    { id: 2, name: '你不知道的JavaScript', price: 89, author: 'Kyle Simpson', category: '编程' },
+    { id: 3, name: '深入React技术栈', price: 79, author: '陈屹', category: '前端' },
+    { id: 4, name: 'JavaScript高级程序设计', price: 109, author: 'Nicholas C. Zakas', category: '编程' } // 同名书
+  ]);
+
+  // 4. 按id查询
+  const book1 = await bookDB.getBookById(1);
+
+  // 5. 按书名查询（使用索引，返回两本同名书）
+  const sameNameBooks = await bookDB.getBooksByName('JavaScript高级程序设计');
+
+  // 6. 更新图书价格
+  await bookDB.updateBook({ ...book1, price: 119 });
+
+  // 7. 删除图书
+  await bookDB.deleteBook(3);
+
+  // 8. 关闭数据库
+  bookDB.close();
+}
+
+// 执行示例
+demo().catch(err => console.error('示例执行出错', err));
+
+```
+
+
+
+### 代码说明：
+
+1. **封装思路**：通过 `BookDB` 类封装 IndexedDB 的核心操作，用 Promise 解决回调嵌套问题，简化调用；
+2. **核心特性：**
+   - 支持事务（`readwrite`/`readonly`），确保数据操作的原子性；
+   - 通过索引（`byName`/`byPrice`）实现高效查询，避免全表扫描；
+   - 提供单条 / 批量操作，满足不同场景需求；
+3. **关键 API：**
+   - `indexedDB.open()`：打开 / 创建数据库；
+   - `createObjectStore()`：创建存储表（类似关系型数据库的表）；
+   - `createIndex()`：创建索引，加速查询；
+   - 事务操作：`add()`（新增）、`put()`（更新 / 新增）、`get()`（查询）、`delete()`（删除）。
