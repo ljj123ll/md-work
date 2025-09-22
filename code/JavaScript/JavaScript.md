@@ -8571,3 +8571,8 @@ demo().catch(err => console.error('示例执行出错', err));
    - `createObjectStore()`：创建存储表（类似关系型数据库的表）；
    - `createIndex()`：创建索引，加速查询；
    - 事务操作：`add()`（新增）、`put()`（更新 / 新增）、`get()`（查询）、`delete()`（删除）。
+
+
+
+
+
