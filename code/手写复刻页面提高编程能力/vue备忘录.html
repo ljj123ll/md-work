@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vue 备忘录</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <!-- 引入Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#4F46E5", // 主色调：靛蓝色
+              secondary: "#EC4899", // 辅助色：粉色
+              neutral: {
+                100: "#F3F4F6",
+                200: "#E5E7EB",
+                300: "#D1D5DB",
+                800: "#1F2937",
+                900: "#111827",
+              },
+            },
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .content-auto {
+          content-visibility: auto;
+        }
+        .memo-shadow {
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        .memo-hover {
+          transition: all 0.3s ease;
+        }
+        .memo-hover:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gradient-to-br from-neutral-100 to-neutral-200 min-h-screen font-sans text-neutral-800"
+  >
+    <div id="app" class="container mx-auto px-4 py-8 max-w-4xl">
+      <!-- 应用标题 -->
+      <header class="text-center mb-10">
+        <h1
+          class="text-[clamp(2rem,5vw,3rem)] font-bold text-primary mb-2 relative inline-block"
+        >
+          备忘录
+          <span
+            class="absolute -bottom-2 left-0 w-full h-1 bg-secondary rounded-full transform scale-x-75 transition-transform hover:scale-x-100"
+          ></span>
+        </h1>
+        <p class="text-neutral-600 text-lg">记录生活中的每一个想法</p>
+      </header>
+
+      <!-- 搜索和添加区域 -->
+      <div class="mb-8 space-y-4">
+        <!-- 搜索框 -->
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="搜索备忘录..."
+            class="w-full py-3 px-5 pr-12 rounded-xl bg-white border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all memo-shadow"
+          />
+          <i
+            class="fa fa-search absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
+          ></i>
+        </div>
+
+        <!-- 添加备忘录 -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <textarea
+            v-model="newMemo"
+            placeholder="输入新的备忘录..."
+            class="flex-1 py-3 px-5 rounded-xl bg-white border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none h-24 memo-shadow"
+            @keydown.enter.exact.prevent="addMemo"
+          ></textarea>
+          <button
+            @click="addMemo"
+            class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 memo-shadow"
+            :disabled="!newMemo.trim()"
+            :class="!newMemo.trim() ? 'opacity-50 cursor-not-allowed' : ''"
+          >
+            <i class="fa fa-plus"></i>
+            <span>添加</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 备忘录列表 -->
+      <div class="space-y-4">
+        <!-- 空状态 -->
+        <div
+          v-if="filteredMemos.length === 0 && memos.length > 0"
+          class="text-center py-12 bg-white rounded-xl memo-shadow"
+        >
+          <i class="fa fa-search text-4xl text-neutral-300 mb-3"></i>
+          <p class="text-neutral-500">没有找到匹配的备忘录</p>
+        </div>
+
+        <div
+          v-if="memos.length === 0"
+          class="text-center py-16 bg-white rounded-xl memo-shadow"
+        >
+          <i class="fa fa-sticky-note-o text-5xl text-neutral-300 mb-4"></i>
+          <p class="text-neutral-500 text-lg">
+            还没有备忘录，添加你的第一条备忘录吧！
+          </p>
+        </div>
+
+        <!-- 备忘录项 -->
+        <div
+          v-for="memo in filteredMemos"
+          :key="memo.id"
+          class="bg-white rounded-xl p-5 memo-shadow memo-hover"
+        >
+          <!-- 备忘录内容（查看模式） -->
+          <div v-if="!memo.isEditing">
+            <div class="flex justify-between items-start mb-3">
+              <p class="text-neutral-800 whitespace-pre-line">
+                {{ memo.content }}
+              </p>
+              <div class="flex gap-2">
+                <!-- 编辑按钮 -->
+                <button
+                  @click="editMemo(memo)"
+                  class="text-primary hover:text-primary/80 p-2 rounded-full hover:bg-primary/10 transition-colors"
+                  title="编辑"
+                >
+                  编辑
+                </button>
+                <!-- 删除按钮 -->
+                <button
+                  @click="deleteMemo(memo.id)"
+                  class="text-red-500 hover:text-red-600 p-2 rounded-full hover:bg-red-100 transition-colors"
+                  title="删除"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+            <div class="text-right text-neutral-400 text-sm">
+              {{ formatDate(memo.createdAt) }}
+            </div>
+          </div>
+
+          <!-- 编辑模式 -->
+          <div v-else>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <textarea
+                v-model="memo.content"
+                class="flex-1 py-3 px-4 rounded-lg bg-neutral-50 border border-neutral-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none h-20"
+                @keydown.enter.exact.prevent="saveMemo(memo)"
+              ></textarea>
+              <div class="flex gap-2">
+                <button
+                  @click="cancelEdit(memo)"
+                  class="bg-neutral-200 hover:bg-neutral-300 text-neutral-800 font-medium py-2 px-4 rounded-lg transition-all"
+                >
+                  取消
+                </button>
+                <button
+                  @click="saveMemo(memo)"
+                  class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部统计 -->
+      <footer class="mt-10 text-center text-neutral-500 text-sm">
+        <p>共有 {{ memos.length }} 条备忘录</p>
+        <button
+          @click="clearAllMemos"
+          v-if="memos.length > 0"
+          class="text-red-500 hover:text-red-600 mt-2 underline decoration-dotted underline-offset-2 transition-colors"
+        >
+          清空所有备忘录
+        </button>
+      </footer>
+    </div>
+
+    <script>
+      // 创建Vue应用
+      const { createApp, ref, computed, watch } = Vue;
+
+      createApp({
+        setup() {
+          // 状态管理
+          const newMemo = ref("");
+          const searchQuery = ref(""); // 原始搜索输入
+          const debouncedSearchQuery = ref(""); // 防抖处理后的搜索值
+          const memos = ref([]);
+
+          // 防抖函数：延迟执行，频繁触发则重置计时
+          const debounce = (fn, delay) => {
+            let timer = null;
+            return (...args) => {
+              clearTimeout(timer);
+              timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+          };
+
+          // 监听原始搜索值变化，应用防抖
+          watch(
+            searchQuery,
+            debounce((newVal) => {
+              // 300ms内无新输入才更新用于过滤的搜索值
+              debouncedSearchQuery.value = newVal;
+            }, 300) // 延迟300ms，平衡响应速度和性能
+          );
+
+          // 初始化：从localStorage加载数据（补全缺失字段）
+          const initMemos = () => {
+            const saved = localStorage.getItem("vue-memos");
+            if (saved) {
+              const parsedMemos = JSON.parse(saved);
+              // 补全缺失字段，兼容旧数据
+              memos.value = parsedMemos.map((memo) => ({
+                id: memo.id || Date.now().toString() + Math.random().toString(36).slice(2),
+                content: memo.content || "",
+                createdAt: memo.createdAt || new Date().toISOString(),
+                isEditing: memo.isEditing ?? false,
+                _originalContent: memo._originalContent || ""
+              }));
+            }
+          };
+
+          // 初始化调用
+          initMemos();
+
+          // 监听memos变化，同步到localStorage
+          watch(
+            memos,
+            (newVal) => {
+              // 移除临时字段，避免冗余存储
+              const cleanMemos = newVal.map((memo) => {
+                const { _originalContent, ...rest } = memo;
+                return rest;
+              });
+              localStorage.setItem("vue-memos", JSON.stringify(cleanMemos));
+            },
+            { deep: true }
+          );
+
+          // 添加备忘录
+          const addMemo = () => {
+            if (!newMemo.value.trim()) return;
+
+            const newId = Date.now().toString();
+            memos.value.unshift({
+              id: newId,
+              content: newMemo.value.trim(),
+              createdAt: new Date().toISOString(),
+              isEditing: false,
+              _originalContent: ""
+            });
+
+            // 清空输入框
+            newMemo.value = "";
+
+            // 添加动画效果
+            setTimeout(() => {
+              const element = document.querySelector(`[key="${newId}"]`);
+              if (element) {
+                element.classList.add("animate-pulse");
+                setTimeout(() => element.classList.remove("animate-pulse"), 1000);
+              }
+            }, 0);
+          };
+
+          // 编辑备忘录：保存原始内容快照
+          const editMemo = (memo) => {
+            memos.value = memos.value.map((m) => {
+              if (m.id === memo.id && !m.isEditing) {
+                return {
+                  ...m,
+                  isEditing: true,
+                  _originalContent: m.content // 保存编辑前的原始内容
+                };
+              }
+              return m;
+            });
+
+            // 自动聚焦编辑框
+            setTimeout(() => {
+              const textarea = document.querySelector(`[key="${memo.id}"] textarea`);
+              if (textarea) textarea.focus();
+            }, 0);
+          };
+
+          // 保存编辑：清理临时字段
+          const saveMemo = (memo) => {
+            memos.value = memos.value.map((m) => {
+              if (m.id === memo.id) {
+                const { _originalContent, ...rest } = m;
+                return { ...rest, isEditing: false };
+              }
+              return m;
+            });
+          };
+
+          // 取消编辑：恢复原始内容
+          const cancelEdit = (memo) => {
+            memos.value = memos.value.map((m) => {
+              if (m.id === memo.id) {
+                return {
+                  ...m,
+                  content: m._originalContent, // 恢复到编辑前的内容
+                  isEditing: false,
+                  _originalContent: ""
+                };
+              }
+              return m;
+            });
+          };
+
+          // 删除备忘录
+          const deleteMemo = (id) => {
+            if (confirm("确定要删除这条备忘录吗？")) {
+              memos.value = memos.value.filter((memo) => memo.id !== id);
+            }
+          };
+
+          // 清空所有备忘录
+          const clearAllMemos = () => {
+            if (memos.value.length > 0 && confirm("确定要删除所有备忘录吗？此操作不可恢复。")) {
+              memos.value = [];
+            }
+          };
+
+          // 过滤备忘录（基于防抖后的搜索值）
+          const filteredMemos = computed(() => {
+            if (!debouncedSearchQuery.value.trim()) return memos.value;
+            
+            const query = debouncedSearchQuery.value.trim().toLowerCase();
+            return memos.value.filter((memo) =>
+              memo.content.toLowerCase().includes(query)
+            );
+          });
+
+          // 格式化日期
+          const formatDate = (isoString) => {
+            const date = new Date(isoString);
+            return date.toLocaleString("zh-CN", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+          };
+
+          return {
+            newMemo,
+            searchQuery,
+            memos,
+            filteredMemos,
+            addMemo,
+            editMemo,
+            saveMemo,
+            cancelEdit,
+            deleteMemo,
+            clearAllMemos,
+            formatDate
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
